@@ -1,4 +1,7 @@
-//lab3a c program
+//NAME:  Nathan Knight, Jaron Mink
+//EMAIL: nathongknight@gmail.com, jaronmink@gmail.com
+//ID:    004749179, 904598072
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
