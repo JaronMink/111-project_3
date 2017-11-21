@@ -26,7 +26,7 @@ void errorExitOne(char* msg)
   errorExitNum(msg, 1);
 }
 
-void superblockSummary(){
+void printSuperblockSummary(){
   //blocks, inodes, blocksize, inodesize, blockspergroup,inodespergroup,firstnonreservedinode
   int numBlocks      = super.s_blocks_count;
   int numInodes      = super.s_inodes_count;
@@ -44,8 +44,28 @@ void superblockSummary(){
 	  blocksPerGroup,
 	  inodesPerGroup,
 	  firstFreeInode);
+}
 
+void printGroupSummary(){
+  //GROUP, group number, totalblocks in group, totalinodes in group,
+  //num free blocks, num free inodes, block num of free bitmap for group,
+  //block num of free inode bitmap for group, block num of first block of
+  //inodes for group
+}
 
+void printFreeBlockEntries(){
+}
+
+void printFreeInodeEntries(){
+}
+
+void printInodeSummary(){
+}
+
+void printDirectoryEntries(){
+}
+
+void printIndirectBlockReferences(){
 }
 
 int main(int argc, char *argv[]){
@@ -74,7 +94,7 @@ int main(int argc, char *argv[]){
     errorExitOne("Error, file system is not in EXT2 format");
   }
     
-  superblockSummary();
+  printSuperblockSummary();
 
   return 0;
 }
