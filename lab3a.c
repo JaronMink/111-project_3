@@ -17,7 +17,7 @@ struct ext2_super_block super;
 
 void errorExitNum(char* msg, int exitCode)
 {
-  fprintf(stdrr, "%s\n", msg);
+  fprintf(stderr, "%s\n", msg);
   exit(exitCode);
 }
 
@@ -28,15 +28,22 @@ void errorExitOne(char* msg)
 
 void superblockSummary(){
   //blocks, inodes, blocksize, inodesize, blockspergroup,inodespergroup,firstnonreservedinode
-  long numBlocks = super.s_blocks_count;
-  long blockSize= 1024 << super.s_log_block_size;
-  long numInodes = super.inodes_count;
-  long inodeSize = super.s_inode_size;
-  long blocksPerGroup = super.s_blocks_per_group;
-  long inodesPerGroup = super.s_inodes_per_group;
-  long firstFreeInode = 
-  dprintf(1, "%s,%d,%d,%d,%d,%d,%d,%d\n", "SUPERBLOCK",
-	  super.s_blocks_count, super.inodes_count,);
+  int numBlocks      = super.s_blocks_count;
+  int numInodes      = super.s_inodes_count;
+  int blockSize      = 1024 << super.s_log_block_size;
+  int inodeSize      = super.s_inode_size;
+  int blocksPerGroup = super.s_blocks_per_group;
+  int inodesPerGroup = super.s_inodes_per_group;
+  int firstFreeInode = super.s_first_ino;
+  dprintf(1, "%s,%d,%d,%d,%d,%d,%d,%d\n",
+	  "SUPERBLOCK",
+	  numBlocks,
+	  numInodes,
+	  blockSize,
+	  inodeSize,
+	  blocksPerGroup,
+	  inodesPerGroup,
+	  firstFreeInode);
 
 
 }
