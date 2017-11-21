@@ -14,6 +14,12 @@
 
 int imgfd;
 
+void superblockSummary(){
+  dprintf(1, "SUPERBLOCK,");
+
+  
+}
+
 int main(int argc, char *argv[]){
   
   if(argc != 2){
@@ -39,6 +45,8 @@ int main(int argc, char *argv[]){
     fprintf(stderr, "Error opening image file descriptor!\n");
     exit(1);
   }
+
+  superblockSummary();
 
   return 0;
 }
