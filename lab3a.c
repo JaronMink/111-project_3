@@ -14,6 +14,7 @@
 
 int                     imgfd;
 struct ext2_super_block super;
+int numGroups = 0;
 
 void errorExitNum(char* msg, int exitCode)
 {
@@ -48,14 +49,26 @@ void printSuperblockSummary(){
 
 void printGroupSummary(struct ext2_group_desc* groupDesc,int groupIndex) {
 
+     
+  int totalBlocks;
+  int totalInodes;
+  uint blocksLeft = super.s_blocks_count%super.s_blocks_per_group;
+  uint inodesLeft = super.s_inodes_count%super.s_inodes_per_group;
   
-  int totalBlocks = super.s_blocks_count;
-  int totalInodes = super.s
-  int numFreeBlocks;
-  int numFreeInodes;
-  int blockBitmapBlock;
-  int inodeBitmapBlock;
-  int freeInodeBlock;
+  if(groupIndex < numGroups -1) { //if this isn't the last group then we know it is fully used
+      totalBlocks = super.s_blocks_per_group;
+      totalInodes = super.s_inodes_per_group;
+    }
+  else { //then whatever is left is in this group, unless there is no remainder, then its filled
+    totalBlocks = (blocksLeft==0)?super.s_blocks_per_group:blocksLeft;
+    totalInodes = (inodesLeft==0)?super.s_inodes_per_group:inodesLeft;
+  }
+    
+  int numFreeBlocks = groupDesc->bg_free_blocks_count;
+  int numFreeInodes = groupDesc->bg_free_inodes_count;
+  int blockBitmapBlock = groupDesc->bg_block_bitmap;
+  int inodeBitmapBlock = groupDesc->bg_inode_bitmap;
+  int freeInodeBlock = groupDesc-> bg_free_inodes_count;
 
   dprintf(1, "%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
 	 "GROUP",
@@ -74,10 +87,23 @@ void printAllGroupSummaries(int numGroups){
   //num free blocks, num free inodes, block num of free bitmap for group,
   //block num of free inode bitmap for group, block num of first block of
   //inodes for group
+  
+  //will only ever be one in our case
+  numGroups = super.s_blocks_count /super.s_blocks_per_group;
 
-  struct ext2_group_desc* groupTable = malloc(sizeof(ext2_group_desc)*numGroups);
+  if((super.s_blocks_count%super.s_blocks_per_group) != 0) //if we have a remainder, we will need another group;
+    numGroups++;
+  
+  //purley for testing, make sure to take out after!///////////////////////////////////////////////////////
+  if(numGroups != 1) {//////////////////////////////////////////////////////////////////////////////////////////
+    errorExitOne("Error! number of groups exceed 1!");/////////////////////////////////////////////////////////////
+  }
+
+  
+  struct ext2_group_desc* groupTable = malloc(sizeof(struct ext2_group_desc)*numGroups);
   //might also change sizeof... with blockSize, see if they are different
-  pread(imgfd ,&groupTable, (sizeof(ext2_group_desc)*numGroups), EXT2_MIN_BLOCK_SIZE*2);
+  pread(imgfd ,&groupTable, (sizeof(struct ext2_group_desc)*numGroups), EXT2_MIN_BLOCK_SIZE*2);
+
 
   
   int i;
@@ -128,14 +154,7 @@ int main(int argc, char *argv[]){
   }    
   printSuperblockSummary();
 
-  //will only ever be one in our case
-  int numGroups = super.s_blocks_count /super.s_blocks_per_group + 1;
-  
-  if(numGroups != 1) {
-    errorExit("Error! number of groups exceed 1!");
-  }
-
-  printAllGroupSummaries();
+  printAllGroupSummaries(numGroups);
   
   return 0;
 }
