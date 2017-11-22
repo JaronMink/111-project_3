@@ -12,8 +12,9 @@
 #include <string.h>
 #include "ext2_fs.h"
 
-int                     imgfd;
+int imgfd = -1;
 struct ext2_super_block super;
+struct ext2_group_desc* groupTable = NULL;
 int numGroups = 0;
 
 void errorExitNum(char* msg, int exitCode)
@@ -82,7 +83,7 @@ void printGroupSummary(struct ext2_group_desc* groupDesc,int groupIndex) {
 	 freeInodeBlock);
 }
 
-void printAllGroupSummaries(int numGroups){
+void printAllGroupSummaries(){
   //GROUP, group number, totalblocks in group, totalinodes in group,
   //num free blocks, num free inodes, block num of free bitmap for group,
   //block num of free inode bitmap for group, block num of first block of
@@ -99,11 +100,12 @@ void printAllGroupSummaries(int numGroups){
     errorExitOne("Error! number of groups exceed 1!");/////////////////////////////////////////////////////////////
   }
 
-  
-  struct ext2_group_desc* groupTable = malloc(sizeof(struct ext2_group_desc)*numGroups);
-  //might also change sizeof... with blockSize, see if they are different
-  pread(imgfd ,&groupTable, (sizeof(struct ext2_group_desc)*numGroups), EXT2_MIN_BLOCK_SIZE*2);
-
+  if(groupTable == NULL) {
+    groupTable = malloc(sizeof(struct ext2_group_desc)*numGroups);
+    //might also change sizeof... with blockSize, see if they are different
+    pread(imgfd ,&groupTable, (sizeof(struct ext2_group_desc)*numGroups), EXT2_MIN_BLOCK_SIZE*2);
+  }
+ 
 
   
   int i;
@@ -112,10 +114,54 @@ void printAllGroupSummaries(int numGroups){
   }
 }
 
-void printFreeBlockEntries(){
+void printFreeBits(__uint32_t* bitmap, int len, char* msg) {
+  //implement interesting things here
 }
 
-void printFreeInodeEntries(){
+void printFreeBlocks(__uint32_t* bitmap, int len) {
+  printFreeBits(bitmap, len, "BFREE");
+}
+
+void printFreeInodes(__uint32_t* bitmap, int len) {
+  printFreeBits(bitmap, len, "IFREE");
+}
+
+void printAllFreeBlocks(){
+  int totalBlocks = -1;
+  uint blocksLeft = super.s_blocks_count%super.s_blocks_per_group;
+  int i;
+  for(i = 0; i < numGroups; i++){
+    
+    if(i < numGroups -1) { //if this isn't the last group then we know it is fully used
+      totalBlocks = super.s_blocks_per_group;
+    }
+    else { //then whatever is left is in this group, unless there is no remainder, then its filled
+	totalBlocks = (blocksLeft==0)?super.s_blocks_per_group:blocksLeft;
+    }    
+    
+    printFreeBlocks(&(groupTable[i].bg_block_bitmap), totalBlocks);
+  }  
+}
+
+void printAllFreeInodes(){
+
+  int i;
+  for(i = 0; i < numGroups; i++){
+
+    int totalInodes;
+    uint inodesLeft = super.s_inodes_count%super.s_inodes_per_group;
+
+    if(i < numGroups -1) { //if this isn't the last group then we know it is fully used
+      totalInodes = super.s_inodes_per_group;
+    }
+    else {
+      //then whatever is left is in this group, unless there is no remainder, then its filled
+      totalInodes = (inodesLeft==0)?super.s_inodes_per_group:inodesLeft;
+    }        
+    
+    printFreeInodes(&(groupTable[i].bg_inode_bitmap), totalInodes);
+  }
+     
 }
 
 void printInodeSummary(){
@@ -154,7 +200,7 @@ int main(int argc, char *argv[]){
   }    
   printSuperblockSummary();
 
-  printAllGroupSummaries(numGroups);
-  
+  printAllGroupSummaries();
+  printAllFreeInodes();
   return 0;
 }
