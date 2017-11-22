@@ -46,11 +46,44 @@ void printSuperblockSummary(){
 	  firstFreeInode);
 }
 
-void printGroupSummary(){
+void printGroupSummary(struct ext2_group_desc* groupDesc,int groupIndex) {
+
+  
+  int totalBlocks = super.s_blocks_count;
+  int totalInodes = super.s
+  int numFreeBlocks;
+  int numFreeInodes;
+  int blockBitmapBlock;
+  int inodeBitmapBlock;
+  int freeInodeBlock;
+
+  dprintf(1, "%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
+	 "GROUP",
+	 groupIndex,
+	 totalBlocks,
+	 totalInodes,
+	 numFreeBlocks,
+	 numFreeInodes,
+	 blockBitmapBlock,
+	 inodeBitmapBlock,
+	 freeInodeBlock);
+}
+
+void printAllGroupSummaries(int numGroups){
   //GROUP, group number, totalblocks in group, totalinodes in group,
   //num free blocks, num free inodes, block num of free bitmap for group,
   //block num of free inode bitmap for group, block num of first block of
   //inodes for group
+
+  struct ext2_group_desc* groupTable = malloc(sizeof(ext2_group_desc)*numGroups);
+  //might also change sizeof... with blockSize, see if they are different
+  pread(imgfd ,&groupTable, (sizeof(ext2_group_desc)*numGroups), EXT2_MIN_BLOCK_SIZE*2);
+
+  
+  int i;
+  for(i = 0; i <numGroups; i++) {
+    printGroupSummary(&groupTable[i], i);
+  }
 }
 
 void printFreeBlockEntries(){
@@ -92,9 +125,17 @@ int main(int argc, char *argv[]){
   pread(imgfd, &super, sizeof(struct ext2_super_block), EXT2_MIN_BLOCK_SIZE);
   if(super.s_magic != EXT2_SUPER_MAGIC){
     errorExitOne("Error, file system is not in EXT2 format");
-  }
-    
+  }    
   printSuperblockSummary();
 
+  //will only ever be one in our case
+  int numGroups = super.s_blocks_count /super.s_blocks_per_group + 1;
+  
+  if(numGroups != 1) {
+    errorExit("Error! number of groups exceed 1!");
+  }
+
+  printAllGroupSummaries();
+  
   return 0;
 }
