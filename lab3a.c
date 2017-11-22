@@ -12,10 +12,10 @@
 #include <string.h>
 #include "ext2_fs.h"
 
-int imgfd = -1;
-struct ext2_super_block super;
+int                     imgfd      = -1;
+int                     numGroups  = 0;
 struct ext2_group_desc* groupTable = NULL;
-int numGroups = 0;
+struct ext2_super_block super;
 
 void errorExitNum(char* msg, int exitCode)
 {
@@ -51,8 +51,8 @@ void printSuperblockSummary(){
 void printGroupSummary(struct ext2_group_desc* groupDesc,int groupIndex) {
 
      
-  int totalBlocks;
-  int totalInodes;
+  int  totalBlocks;
+  int  totalInodes;
   uint blocksLeft = super.s_blocks_count%super.s_blocks_per_group;
   uint inodesLeft = super.s_inodes_count%super.s_inodes_per_group;
   
@@ -65,11 +65,11 @@ void printGroupSummary(struct ext2_group_desc* groupDesc,int groupIndex) {
     totalInodes = (inodesLeft==0)?super.s_inodes_per_group:inodesLeft;
   }
     
-  int numFreeBlocks = groupDesc->bg_free_blocks_count;
-  int numFreeInodes = groupDesc->bg_free_inodes_count;
-  int blockBitmapBlock = groupDesc->bg_block_bitmap;
-  int inodeBitmapBlock = groupDesc->bg_inode_bitmap;
-  int freeInodeBlock = groupDesc-> bg_free_inodes_count;
+  int numFreeBlocks       = groupDesc->bg_free_blocks_count;
+  int numFreeInodes       = groupDesc->bg_free_inodes_count;
+  int blockBitmapBlock    = groupDesc->bg_block_bitmap;
+  int inodeBitmapBlock    = groupDesc->bg_inode_bitmap;
+  int firstFreeInodeBlock = groupDesc->bg_inode_table;
 
   dprintf(1, "%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
 	 "GROUP",
@@ -80,7 +80,7 @@ void printGroupSummary(struct ext2_group_desc* groupDesc,int groupIndex) {
 	 numFreeInodes,
 	 blockBitmapBlock,
 	 inodeBitmapBlock,
-	 freeInodeBlock);
+	 firstFreeInodeBlock);
 }
 
 void printAllGroupSummaries(){
@@ -116,7 +116,14 @@ void printAllGroupSummaries(){
 }
 
 void printFreeBits(__uint32_t* bitmap, int len, char* msg) {
-  dprintf(1, "%s,\n", msg);
+  int counter = 0;
+  int i;
+  for(i = 0; i < len; i++){//THIS DOES NOT WORK 
+    if(bitmap[i] == 0)
+      counter++;
+  }
+
+  dprintf(1, "%s,%d\n", msg, counter);
 }
 
 void printFreeBlocks(__uint32_t* bitmap, int len) {
@@ -199,9 +206,10 @@ int main(int argc, char *argv[]){
   if(super.s_magic != EXT2_SUPER_MAGIC){
     errorExitOne("Error, file system is not in EXT2 format");
   }    
-  printSuperblockSummary();
 
+  printSuperblockSummary();
   printAllGroupSummaries();
   printAllFreeInodes();
+  
   return 0;
 }
