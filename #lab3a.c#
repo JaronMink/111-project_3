@@ -90,9 +90,9 @@ void printAllGroupSummaries(){
   //inodes for group
   
   //will only ever be one in our case
-  numGroups = super.s_blocks_count /super.s_blocks_per_group;
+  numGroups = super.s_blocks_count / super.s_blocks_per_group;
 
-  if((super.s_blocks_count%super.s_blocks_per_group) != 0) //if we have a remainder, we will need another group;
+  if((super.s_blocks_count % super.s_blocks_per_group) != 0) //if we have a remainder, we will need another group;
     numGroups++;
   
   //purley for testing, make sure to take out after!///////////////////////////////////////////////////////
@@ -103,20 +103,19 @@ void printAllGroupSummaries(){
   if(groupTable == NULL) {
     groupTable = malloc(sizeof(struct ext2_group_desc)*numGroups);
     //might also change sizeof... with blockSize, see if they are different
-    //pread(imgfd ,&groupTable, (sizeof(struct ext2_group_desc)*numGroups), EXT2_MIN_BLOCK_SIZE*2);
+    pread(imgfd ,&groupTable, (sizeof(struct ext2_group_desc)*numGroups), EXT2_MIN_BLOCK_SIZE*2);
   }
  
 
   
   int i;
   for(i = 0; i <numGroups; i++) {
-    pread(imgfd, &groupTable[i], sizeof(struct ext2_group_desc), EXT2_MIN_BLOCK_SIZE*2 + i*sizeof(struct ext2_group_desc));
     printGroupSummary(&groupTable[i], i);
   }
 }
 
 void printFreeBits(__uint32_t* bitmap, int len, char* msg) {
-  dprintf(1, "%s,\n", msg);
+  //implement interesting things here
 }
 
 void printFreeBlocks(__uint32_t* bitmap, int len) {
@@ -175,7 +174,7 @@ void printIndirectBlockReferences(){
 }
 
 int main(int argc, char *argv[]){
-  
+
   if(argc != 2){
     fprintf(stderr, "Provide image as argument as follows: ./lab3a *.img\n");
     exit(1);
