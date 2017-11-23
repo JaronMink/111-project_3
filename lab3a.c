@@ -173,19 +173,21 @@ char* secToDate(time_t time) {
 
 void printInodeSummary(struct ext2_inode* inode, int inodeNum) {
   char fileType ='\0';
-	
-	switch(inode->i_mode) {
-	case 0xA000:
+  
+  switch(inode->i_mode & 0xF000) { //get the required bits
+	case 0xA000://EXT2_S_IFLNK:
 	  fileType = 's';
 	  break;
-	case 0x8000:
+	case 0x8000://EXT2_S_IFREG:
 	  fileType = 'f';
 	  break;
-	case 0x4000:
+	case 0x4000://EXT2_S_IFDIR:
 	  fileType = 'd';
 	  break;
 	default:
-	  errorExitOne("Error, undefined file type found");
+	  fileType = '?';
+	  break;
+	  // errorExitOne("Error, undefined file type found");
 	}
 
 	int mode = inode->i_mode & 0xFFF; //last 12 bits only
@@ -213,6 +215,23 @@ void printInodeSummary(struct ext2_inode* inode, int inodeNum) {
 	       lastAccessTime,
 	       size,
 	       blockNum);
+
+	printf(",%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+	       inode->i_block[0],
+	       inode->i_block[1],
+	       inode->i_block[2],
+	       inode->i_block[3],
+	       inode->i_block[4],
+	       inode->i_block[5],
+	       inode->i_block[6],
+	       inode->i_block[7],
+	       inode->i_block[8],
+	       inode->i_block[9],
+	       inode->i_block[10],
+	       inode->i_block[11],
+	       inode->i_block[12],
+	       inode->i_block[13],
+	       inode->i_block[14]); 
 }
 
 void printInodesForGroup(__uint32_t blockNum){
@@ -225,7 +244,7 @@ void printInodesForGroup(__uint32_t blockNum){
     pread(imgfd, &currInode, sizeof(struct ext2_inode), offset + i*sizeof(struct ext2_inode));
     if(currInode.i_mode != 0 && currInode.i_links_count != 0)
       {
-	printInodeSummary(&currInode, i);
+	printInodeSummary(&currInode, (i+1));
       }
   }
 }
