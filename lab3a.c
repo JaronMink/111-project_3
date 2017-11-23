@@ -140,7 +140,7 @@ void printFreeBlocks(__uint32_t bitmap) {
   printFreeBits(bitmap, "BFREE");
 }
 
-void printFreeInodes(__uint32_t bitmap, int len) {
+void printFreeInodes(__uint32_t bitmap) {
   printFreeBits(bitmap, "IFREE");
 }
 
