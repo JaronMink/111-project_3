@@ -240,7 +240,8 @@ void printInodesForGroup(__uint32_t blockNum){
 
   struct ext2_inode currInode;
   unsigned int i;
-  for(i = 0; (i*sizeof(struct ext2_inode)) < (1024u <<super.s_log_block_size); i++) {
+  
+  for(i = 0; i < super.s_inodes_count; i++) {//(i*sizeof(struct ext2_inode)) < (1024u <<super.s_log_block_size); i++) {
     pread(imgfd, &currInode, sizeof(struct ext2_inode), offset + i*sizeof(struct ext2_inode));
     if(currInode.i_mode != 0 && currInode.i_links_count != 0)
       {
