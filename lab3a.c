@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include "ext2_fs.h"
+#include <time.h>
 
 int                     imgfd      = -1;
 int                     numGroups  = 0;
@@ -163,15 +164,15 @@ void printAllFreeInodes(){
 
 char* secToDate(time_t time) {
   //time_t time = epoch
-  char formattedDate[50];
+  char* formattedDate = malloc(sizeof(char)*50);
   struct tm ts = *gmtime(&time);
   strftime(formattedDate, 50, "%m/%d/%y %H:%M:%S", &ts);
   return formattedDate;
 }
 
 
-void printInodeSummary(ext2_inode* inode, int indoneNum) {
-  	char fileType;
+void printInodeSummary(struct ext2_inode* inode, int inodeNum) {
+  char fileType ='\0';
 	
 	switch(inode->i_mode) {
 	case 0xA000:
@@ -190,22 +191,19 @@ void printInodeSummary(ext2_inode* inode, int indoneNum) {
 	int mode = inode->i_mode & 0xFFF; //last 12 bits only
 	int owner = inode->i_uid;
 	int group = inode->i_gid;
-	int linkCount = inode->i_link_Count;
+	int linkCount = inode->i_links_count;
 	char* lastChangeTime = secToDate(inode->i_ctime);
 	char* lastModTime = secToDate(inode->i_mtime); 
 	char* lastAccessTime = secToDate(inode->i_atime);
 	int size = inode->i_size;
 	int blockNum = inode->i_blocks;
 	
-       
-	  
-	
-	//INODE, inodenum, filetype, mode, owner, group,
+       	//INODE, inodenum, filetype, mode, owner, group,
 	//linkcount, last change time, mod time, last access time, size, num of blocks
-	printf("%s,%d,%s,%o,%d,%d,%d,%s,%s,%s,%d,%d",
+	printf("%s,%d,%c,%o,%d,%d,%d,%s,%s,%s,%d,%d",
 	       "INODE",
 	       inodeNum,
-	       filetype,
+	       fileType,
 	       mode,
 	       owner,
 	       group,
@@ -218,12 +216,13 @@ void printInodeSummary(ext2_inode* inode, int indoneNum) {
 }
 
 void printInodesForGroup(__uint32_t blockNum){
-  long long offset = (1024 << super.s_log_block_size)*blockNum;
+  unsigned int offset = (1024 << super.s_log_block_size)*blockNum;
+  printf("blockNum: %d\n", blockNum);
 
   struct ext2_inode currInode;
-  int i;
-  for(i = 0; (i*sizeof(ext2_inode)) < (1024<<super.s_log_block_size); i++) {
-    pread(imgfd, &currInode, sizeof(ext2_inode), offset + i*sizeof(ext2_inode));
+  unsigned int i;
+  for(i = 0; (i*sizeof(struct ext2_inode)) < (1024u <<super.s_log_block_size); i++) {
+    pread(imgfd, &currInode, sizeof(struct ext2_inode), offset + i*sizeof(struct ext2_inode));
     if(currInode.i_mode != 0 && currInode.i_links_count != 0)
       {
 	printInodeSummary(&currInode, i);
@@ -232,9 +231,10 @@ void printInodesForGroup(__uint32_t blockNum){
 }
 
 void printAllInodeSummaries() {
+  int i;
   for(i = 0; i < numGroups; i++){    
     printInodesForGroup(groupTable[i].bg_inode_table);
-    
+  }
 }
 
 void printDirectoryEntries(){
