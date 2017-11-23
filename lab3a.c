@@ -114,20 +114,28 @@ void printAllGroupSummaries(){
 
 //need to print from the bitmap, currently we give it the block number,
 //not the actual bitmap, we need to read the bitmap and traverse it
-void printFreeBits(__uint32_t bitmap, int len, char* msg){
-  int i;
+void printFreeBits(__uint32_t blockNum, int len, char* msg){
   
   __uint32_t bitmask = 0x1;
-  printf("%d\n", bitmap);
-  for(i = 0; i < len; i++){
-    //printf("%d\n", bitmask);
-    if((bitmap & bitmask) == 0x0)
-      dprintf(1, "%s,%d\n", msg, i);
-    bitmask = bitmask << 1;
+  long long offset = (1024<< super.s_log_block_size)*blockNum;//2048 + (blockNum - 1)*(1024 << super.s_log_b
+
+  int currByte;
+  char byteBuf;
+  for(currByte = 0; currByte < (1024) << super.s_log_block_size; currByte++) {
+    pread(imfd, &byteBuf, 1, offset + currByte);
+
+    bitmask = 0x1;
+    //if there is a 0 present, report it
+    int i;
+    for(i = 0; i < 8; i++){
+      if((bitmap & bitmask) == 0x0)
+	dprintf(1, "%s,%d\n", msg, i);
+      bitmask = bitmask << 1;
+    }
   }
 }
 
-/*
+
 void printFreeBlocks(__uint32_t bitmap, int len) {
   printFreeBits(bitmap, len, "BFREE");
 }
@@ -135,27 +143,28 @@ void printFreeBlocks(__uint32_t bitmap, int len) {
 void printFreeInodes(__uint32_t bitmap, int len) {
   printFreeBits(bitmap, len, "IFREE");
 }
-*/
+
 
 void printAllFreeBlocks(){
-  /*
+  
   int  totalBlocks = -1;
   uint blocksLeft  = super.s_blocks_count % super.s_blocks_per_group;
-
+  
   int i;
   for(i = 0; i < numGroups; i++){  
-    if(i < numGroups -1) { //if this isn't the last group then we know it is fully used
+    /*if(i < numGroups -1) { //if this isn't the last group then we know it is fully used
       totalBlocks = super.s_blocks_per_group;
     }
     else { //then whatever is left is in this group, unless there is no remainder, then its filled
       totalBlocks = (blocksLeft == 0) ? super.s_blocks_per_group : blocksLeft;
     }    
     int blockNum = groupTable[i].bg_block_bitmap;
-    
+    */
     printFreeBits((groupTable[i].bg_block_bitmap), totalBlocks, "BFREE");
   }
-  */
+  
 
+  /*
   int i;
 
   for(i = 0; i < numGroups; i++){
@@ -170,7 +179,7 @@ void printAllFreeBlocks(){
 	}
       }
     }
-  }
+    }*/
 }
 
 void printAllFreeInodes(){
