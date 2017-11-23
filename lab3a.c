@@ -114,7 +114,7 @@ void printAllGroupSummaries(){
 
 //need to print from the bitmap, currently we give it the block number,
 //not the actual bitmap, we need to read the bitmap and traverse it
-void printFreeBits(__uint32_t blockNum, int len, char* msg){
+void printFreeBits(__uint32_t blockNum, char* msg){
   
   __uint32_t bitmask = 0x1;
   long long offset = (1024<< super.s_log_block_size)*blockNum;//2048 + (blockNum - 1)*(1024 << super.s_log_b
@@ -122,81 +122,42 @@ void printFreeBits(__uint32_t blockNum, int len, char* msg){
   int currByte;
   char byteBuf;
   for(currByte = 0; currByte < (1024) << super.s_log_block_size; currByte++) {
-    pread(imfd, &byteBuf, 1, offset + currByte);
+    pread(imgfd, &byteBuf, 1, offset + currByte);
 
     bitmask = 0x1;
     //if there is a 0 present, report it
     int i;
     for(i = 0; i < 8; i++){
-      if((bitmap & bitmask) == 0x0)
-	dprintf(1, "%s,%d\n", msg, i);
+      if((byteBuf & bitmask) == 0x0)
+	dprintf(1, "%s,%d\n", msg, (i+8*currByte + 1));
       bitmask = bitmask << 1;
     }
   }
 }
 
 
-void printFreeBlocks(__uint32_t bitmap, int len) {
-  printFreeBits(bitmap, len, "BFREE");
+void printFreeBlocks(__uint32_t bitmap) {
+  printFreeBits(bitmap, "BFREE");
 }
 
 void printFreeInodes(__uint32_t bitmap, int len) {
-  printFreeBits(bitmap, len, "IFREE");
+  printFreeBits(bitmap, "IFREE");
 }
 
 
 void printAllFreeBlocks(){
   
-  int  totalBlocks = -1;
-  uint blocksLeft  = super.s_blocks_count % super.s_blocks_per_group;
-  
   int i;
   for(i = 0; i < numGroups; i++){  
-    /*if(i < numGroups -1) { //if this isn't the last group then we know it is fully used
-      totalBlocks = super.s_blocks_per_group;
-    }
-    else { //then whatever is left is in this group, unless there is no remainder, then its filled
-      totalBlocks = (blocksLeft == 0) ? super.s_blocks_per_group : blocksLeft;
-    }    
-    int blockNum = groupTable[i].bg_block_bitmap;
-    */
-    printFreeBits((groupTable[i].bg_block_bitmap), totalBlocks, "BFREE");
+    printFreeBlocks(groupTable[i].bg_block_bitmap);
   }
   
-
-  /*
-  int i;
-
-  for(i = 0; i < numGroups; i++){
-    int j;
-    for(j = 0; j < (1024 << super.s_log_block_size); j++){
-      pread(imgfd, &eightBitInt, 1, groupTable[i].bg_block_bitmap * (1024 << super.s_log_block_size) + j);
-      
-      int k;
-      for(k = 0; k < 8; k++){
-	if((eightBitInt & (1 << k)) == 0){
-	  dprintf(1, "%s,%d\n", "BFREE", (i * super.s_blocks_per_group) + (j * 8) + (k + 1));
-	}
-      }
-    }
-    }*/
 }
 
 void printAllFreeInodes(){
   int i;
-  for(i = 0; i < numGroups; i++){
-    int  totalInodes;
-    uint inodesLeft = super.s_inodes_count % super.s_inodes_per_group;
-
-    if(i < numGroups -1) { //if this isn't the last group then we know it is fully used
-      totalInodes = super.s_inodes_per_group;
-    }
-    else {
-      //then whatever is left is in this group, unless there is no remainder, then its filled
-      totalInodes = (inodesLeft == 0) ? super.s_inodes_per_group : inodesLeft;
-    }        
-    
-    printFreeBits((groupTable[i].bg_inode_bitmap), totalInodes, "IFREE");
+  for(i = 0; i < numGroups; i++){    
+    printFreeInodes(groupTable[i].bg_inode_bitmap);
   }
 }
 
