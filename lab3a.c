@@ -14,6 +14,7 @@
 
 int                     imgfd      = -1;
 int                     numGroups  = 0;
+uint8_t                 eightBitInt;
 struct ext2_group_desc* groupTable = NULL;
 struct ext2_super_block super;
 
@@ -126,6 +127,7 @@ void printFreeBits(__uint32_t bitmap, int len, char* msg){
   }
 }
 
+/*
 void printFreeBlocks(__uint32_t bitmap, int len) {
   printFreeBits(bitmap, len, "BFREE");
 }
@@ -133,8 +135,10 @@ void printFreeBlocks(__uint32_t bitmap, int len) {
 void printFreeInodes(__uint32_t bitmap, int len) {
   printFreeBits(bitmap, len, "IFREE");
 }
+*/
 
 void printAllFreeBlocks(){
+  /*
   int  totalBlocks = -1;
   uint blocksLeft  = super.s_blocks_count % super.s_blocks_per_group;
 
@@ -148,8 +152,25 @@ void printAllFreeBlocks(){
     }    
     int blockNum = groupTable[i].bg_block_bitmap;
     
-    printFreeBlocks((groupTable[i].bg_block_bitmap), totalBlocks);
-  }  
+    printFreeBits((groupTable[i].bg_block_bitmap), totalBlocks, "BFREE");
+  }
+  */
+
+  int i;
+
+  for(i = 0; i < numGroups; i++){
+    int j;
+    for(j = 0; j < (1024 << super.s_log_block_size); j++){
+      pread(imgfd, &eightBitInt, 1, groupTable[i].bg_block_bitmap * (1024 << super.s_log_block_size) + j);
+      
+      int k;
+      for(k = 0; k < 8; k++){
+	if((eightBitInt & (1 << k)) == 0){
+	  dprintf(1, "%s,%d\n", "BFREE", (i * super.s_blocks_per_group) + (j * 8) + (k + 1));
+	}
+      }
+    }
+  }
 }
 
 void printAllFreeInodes(){
@@ -166,7 +187,7 @@ void printAllFreeInodes(){
       totalInodes = (inodesLeft == 0) ? super.s_inodes_per_group : inodesLeft;
     }        
     
-    printFreeInodes((groupTable[i].bg_inode_bitmap), totalInodes);
+    printFreeBits((groupTable[i].bg_inode_bitmap), totalInodes, "IFREE");
   }
 }
 
@@ -207,7 +228,7 @@ int main(int argc, char *argv[]){
 
   printSuperblockSummary();
   printAllGroupSummaries();
-  //printAllFreeBlocks();
+  printAllFreeBlocks();
   printAllFreeInodes();
   
   return 0;
