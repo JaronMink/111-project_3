@@ -103,34 +103,38 @@ void printAllGroupSummaries(){
   if(groupTable == NULL) {
     groupTable = malloc(sizeof(struct ext2_group_desc)*numGroups);
     //might also change sizeof... with blockSize, see if they are different
-    //pread(imgfd ,&groupTable, (sizeof(struct ext2_group_desc)*numGroups), EXT2_MIN_BLOCK_SIZE*2);
+    pread(imgfd, groupTable, (sizeof(struct ext2_group_desc)*numGroups), EXT2_MIN_BLOCK_SIZE*2);
   }
  
 
   
   int i;
   for(i = 0; i <numGroups; i++) {
-    pread(imgfd, &groupTable[i], sizeof(struct ext2_group_desc), EXT2_MIN_BLOCK_SIZE*2 + i*sizeof(struct ext2_group_desc));
-    printGroupSummary(&groupTable[i], i);
+    //  pread(imgfd, &groupTable[i], sizeof(struct ext2_group_desc), EXT2_MIN_BLOCK_SIZE*2 + i*sizeof(struct ext2_group_desc));
+    printGroupSummary(&(groupTable[i]), i);
   }
 }
 
-void printFreeBits(__uint32_t* bitmap, int len, char* msg) {
-  int counter = 0;
+//need to print from the bitmap, currently we give it the block number,
+//not the actual bitmap, we need to read the bitmap and traverse it
+void printFreeBits(__uint32_t bitmap, int len, char* msg) {
   int i;
-  for(i = 0; i < len; i++){//THIS DOES NOT WORK 
-    if(bitmap[i] == 0)
-      counter++;
-  }
 
-  dprintf(1, "%s,%d\n", msg, counter);
+  __uint32_t bitmask = 0x1;
+  printf("%d\n", bitmap);
+  for(i = 0; i < len; i++){
+    //printf("%d\n", bitmask);
+    if((bitmap & bitmask) == 0x0)
+      dprintf(1, "%s,%d\n", msg, i);
+    bitmask = bitmask << 1;
+  }
 }
 
-void printFreeBlocks(__uint32_t* bitmap, int len) {
+void printFreeBlocks(__uint32_t bitmap, int len) {
   printFreeBits(bitmap, len, "BFREE");
 }
 
-void printFreeInodes(__uint32_t* bitmap, int len) {
+void printFreeInodes(__uint32_t bitmap, int len) {
   printFreeBits(bitmap, len, "IFREE");
 }
 
@@ -146,8 +150,9 @@ void printAllFreeBlocks(){
     else { //then whatever is left is in this group, unless there is no remainder, then its filled
 	totalBlocks = (blocksLeft==0)?super.s_blocks_per_group:blocksLeft;
     }    
+    int blockNum = groupTable[i].bg_block_bitmap;
     
-    printFreeBlocks(&(groupTable[i].bg_block_bitmap), totalBlocks);
+    printFreeBlocks((groupTable[i].bg_block_bitmap), totalBlocks);
   }  
 }
 
@@ -167,7 +172,7 @@ void printAllFreeInodes(){
       totalInodes = (inodesLeft==0)?super.s_inodes_per_group:inodesLeft;
     }        
     
-    printFreeInodes(&(groupTable[i].bg_inode_bitmap), totalInodes);
+    printFreeInodes((groupTable[i].bg_inode_bitmap), totalInodes);
   }
      
 }
@@ -209,6 +214,7 @@ int main(int argc, char *argv[]){
 
   printSuperblockSummary();
   printAllGroupSummaries();
+  //printAllFreeBlocks();
   printAllFreeInodes();
   
   return 0;
