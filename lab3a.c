@@ -161,7 +161,45 @@ void printAllFreeInodes(){
   }
 }
 
-void printInodeSummary(){
+
+void printInodeSummary(ext2_inode* inode) {
+  	char fileType;
+	
+	switch(inode->i_mode) {
+	case 0xA000:
+	  fileType = 's';
+	  break;
+	case 0x8000:
+	  fileType = 'f';
+	  break;
+	case 0x4000:
+	  fileType = 'd';
+	  break;
+	default:
+	  errorExitOne("Error, undefined file type found");
+	}
+	
+
+}
+
+void printInodesForGroup(__uint32_t blockNum){
+  long long offset = (1024 << super.s_log_block_size)*blockNum;
+
+  struct ext2_inode currInode;
+  int i;
+  for(i = 0; (i*sizeof(ext2_inode)) < (1024<<super.s_log_block_size); i++) {
+    pread(imgfd, &currInode, sizeof(ext2_inode), offset + i*sizeof(ext2_inode));
+    if(currInode.i_mode != 0 && currInode.i_links_count != 0)
+      {
+	printInodeSummary(&currInode);
+      }
+  }
+}
+
+void printAllInodeSummaries() {
+  for(i = 0; i < numGroups; i++){    
+    printInodesForGroup(groupTable[i].bg_inode_table);
+    
 }
 
 void printDirectoryEntries(){
@@ -200,6 +238,7 @@ int main(int argc, char *argv[]){
   printAllGroupSummaries();
   printAllFreeBlocks();
   printAllFreeInodes();
+  printAllInodeSummaries();
   
   return 0;
 }
