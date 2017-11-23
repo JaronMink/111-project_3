@@ -161,8 +161,16 @@ void printAllFreeInodes(){
   }
 }
 
+char* secToDate(time_t time) {
+  //time_t time = epoch
+  char formattedDate[50];
+  struct tm ts = *gmtime(&time);
+  strftime(formattedDate, 50, "%m/%d/%y %H:%M:%S", &ts);
+  return formattedDate;
+}
 
-void printInodeSummary(ext2_inode* inode) {
+
+void printInodeSummary(ext2_inode* inode, int indoneNum) {
   	char fileType;
 	
 	switch(inode->i_mode) {
@@ -178,8 +186,35 @@ void printInodeSummary(ext2_inode* inode) {
 	default:
 	  errorExitOne("Error, undefined file type found");
 	}
-	
 
+	int mode = inode->i_mode & 0xFFF; //last 12 bits only
+	int owner = inode->i_uid;
+	int group = inode->i_gid;
+	int linkCount = inode->i_link_Count;
+	char* lastChangeTime = secToDate(inode->i_ctime);
+	char* lastModTime = secToDate(inode->i_mtime); 
+	char* lastAccessTime = secToDate(inode->i_atime);
+	int size = inode->i_size;
+	int blockNum = inode->i_blocks;
+	
+       
+	  
+	
+	//INODE, inodenum, filetype, mode, owner, group,
+	//linkcount, last change time, mod time, last access time, size, num of blocks
+	printf("%s,%d,%s,%o,%d,%d,%d,%s,%s,%s,%d,%d",
+	       "INODE",
+	       inodeNum,
+	       filetype,
+	       mode,
+	       owner,
+	       group,
+	       linkCount,
+	       lastChangeTime,
+	       lastModTime,
+	       lastAccessTime,
+	       size,
+	       blockNum);
 }
 
 void printInodesForGroup(__uint32_t blockNum){
@@ -191,7 +226,7 @@ void printInodesForGroup(__uint32_t blockNum){
     pread(imgfd, &currInode, sizeof(ext2_inode), offset + i*sizeof(ext2_inode));
     if(currInode.i_mode != 0 && currInode.i_links_count != 0)
       {
-	printInodeSummary(&currInode);
+	printInodeSummary(&currInode, i);
       }
   }
 }
