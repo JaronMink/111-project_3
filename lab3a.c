@@ -227,7 +227,25 @@ void printInodeSummary(struct ext2_inode* inode, int inodeNum){
 	  inode->i_block[11],
 	  inode->i_block[12],
 	  inode->i_block[13],
-	  inode->i_block[14]); 
+	  inode->i_block[14]);
+
+  if(fileType == 'd'){
+    int i;
+    for(i = 0; i < EXT2_NDIR_BLOCKS; i++){
+      if(inode.i_block[i] == 0){
+	break;
+      }
+
+      
+    dprintf(1, "%s,%d,%d,%d,%d,%d,\'%s\'\n",
+	    "DIRENT",
+	    0,
+	    0,
+	    0,
+	    0,
+	    0,
+	    "test");
+  }
 }
 
 void printInodesForGroup(__uint32_t blockNum){
