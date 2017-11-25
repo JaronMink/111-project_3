@@ -103,7 +103,10 @@ void printAllGroupSummaries(){
   if(groupTable == NULL){
     groupTable = malloc(sizeof(struct ext2_group_desc) * numGroups);
     //might also change sizeof... with blockSize, see if they are different
-    pread(imgfd, groupTable, (sizeof(struct ext2_group_desc) * numGroups), EXT2_MIN_BLOCK_SIZE * 2);
+    pread(imgfd,
+	  groupTable,
+	  (sizeof(struct ext2_group_desc) * numGroups),
+	  EXT2_MIN_BLOCK_SIZE * 2);
   }
 
   int i;
@@ -196,6 +199,10 @@ void printDirectoryEntries(struct ext2_inode* inode, int inodeNum){
   }  
 }
 
+void printIndirectBlockReferences(struct ext2_inode* inode, int inodeNum){
+  
+}
+
 void printInodeSummary(struct ext2_inode* inode, int inodeNum){
   char fileType ='\0';
   
@@ -262,7 +269,11 @@ void printInodeSummary(struct ext2_inode* inode, int inodeNum){
 
   if(fileType == 'd'){
     printDirectoryEntries(inode, inodeNum);
-  }  
+  }
+
+  if(fileType == 'f' || fileType == 'd'){
+    printIndirectBlockReferences(inode, inodeNum);
+  }
 }
 
 void printInodesForGroup(__uint32_t blockNum){
@@ -285,9 +296,6 @@ void printAllInodeSummaries(){
   for(i = 0; i < numGroups; i++){    
     printInodesForGroup(groupTable[i].bg_inode_table);
   }
-}
-
-void printIndirectBlockReferences(){
 }
 
 int main(int argc, char *argv[]){
