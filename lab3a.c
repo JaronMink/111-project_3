@@ -165,6 +165,37 @@ char* secToDate(time_t time){
   return formattedDate;
 }
 
+void printDirectoryEntries(struct ext2_inode* inode, int inodeNum){
+  struct ext2_dir_entry temp;
+  
+  int i;
+  for(i = 0; i < EXT2_NDIR_BLOCKS; i++){
+    if(inode->i_block[i] == 0){
+      break;
+    }
+
+    int j;
+    for(j = 0; j < 1024 << super.s_log_block_size; j += temp.rec_len){
+      pread(imgfd,
+	    &temp,
+	    sizeof(struct ext2_dir_entry),
+	    (inode->i_block[i] * 1024 << super.s_log_block_size) + j);
+      if(temp.inode == 0){
+	return;
+      }
+	    
+      dprintf(1, "%s,%d,%d,%d,%d,%d,\'%s\'\n",
+	      "DIRENT",
+	      inodeNum,
+	      j,
+	      temp.inode,
+	      temp.rec_len,
+	      temp.name_len,
+	      temp.name);
+    }
+  }  
+}
+
 void printInodeSummary(struct ext2_inode* inode, int inodeNum){
   char fileType ='\0';
   
@@ -229,36 +260,9 @@ void printInodeSummary(struct ext2_inode* inode, int inodeNum){
 	  inode->i_block[13],
 	  inode->i_block[14]);
 
-  struct ext2_dir_entry temp;
-  
   if(fileType == 'd'){
-    int i;
-    for(i = 0; i < EXT2_NDIR_BLOCKS; i++){
-      if(inode->i_block[i] == 0){
-	break;
-      }
-
-      int j;
-      for(j = 0; j < 1024 << super.s_log_block_size; j += temp.rec_len){
-	pread(imgfd,
-	      &temp,
-	      sizeof(struct ext2_dir_entry),
-	      (inode->i_block[i] * 1024 << super.s_log_block_size) + j);
-	if(temp.inode == 0){
-	  return;
-	}
-	    
-	dprintf(1, "%s,%d,%d,%d,%d,%d,\'%s\'\n",
-		"DIRENT",
-		inodeNum,
-		j,
-		temp.inode,
-		temp.rec_len,
-		temp.name_len,
-		temp.name);
-      }
-    }
-  }
+    printDirectoryEntries(inode, inodeNum);
+  }  
 }
 
 void printInodesForGroup(__uint32_t blockNum){
@@ -281,9 +285,6 @@ void printAllInodeSummaries(){
   for(i = 0; i < numGroups; i++){    
     printInodesForGroup(groupTable[i].bg_inode_table);
   }
-}
-
-void printDirectoryEntries(){
 }
 
 void printIndirectBlockReferences(){
