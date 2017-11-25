@@ -329,7 +329,6 @@ void printIndirectBlockReferences(struct ext2_inode* inode, int inodeNum){
 //JARON
 void printIndirectBlockSummary(int blockNum, int inodeNum, int indirectLevel)
 {
-  
   int blockOffset = blockNum*(1024 << super.s_log_block_size);
   struct ext2_dir_entry dir;
   int interBlockOffset;
@@ -346,26 +345,32 @@ void printIndirectBlockSummary(int blockNum, int inodeNum, int indirectLevel)
 	     //blockNum,
 	     );
 	}
-  }   
+  }
 }
 
 
 
 //JARON
-void printIndirectBlockReferences(int* blockPtr, int inodeNum, int indirectLevel, int currLevel){
-   
+void printIndirectBlockReferences(int* blockPtr, int inodeNum, int indirectLevel, int currLevel, int block){
+
+  if(currLevel <= 0)
+    return;
   int* indirectBlock = malloc((1024 << super.s_log_block_size));
   int i;
+  if(block != 0)
+    printIndirectBlockSummary(block, inodeNum, currLevel);
+    
   for(i = 0; (i*sizeof(int *) < (1024u <<super.s_log_block_size)); i++) {
-    if(currLevel > 1) //if we are not pointing the data yet, follow the pointer
-      {
+    
+    if(currLevel > 0) //if we are not pointing the data yet, follow the pointer
+      {     
 	pread(imgfd, indirectBlock, (1024 << super.s_log_block_size), blockPtr[i]*(1024<<super.s_log_block_size));
-	printIndirectBlockReferences(indirectBlock, inodeNum, indirectLevel, currLevel - 1);
+	printIndirectBlockReferences(indirectBlock, inodeNum, indirectLevel, currLevel - 1, blockPtr[i]);
       }
-    else { //we have a single pointer to the block data, lets report on it
-      if(blockPtr[i] != 0)
-	printIndirectBlockSummary(blockPtr[i], inodeNum, indirectLevel);
-    } 
+    //else { //we have a single pointer to the block data, lets report on it
+    // if(blockPtr[i] != 0)
+    //  printIndirectBlockSummary(blockPtr[i], inodeNum, indirectLevel);
+    //} 
   }
 }
 
@@ -374,19 +379,19 @@ void printAllIndirectBlocks(struct ext2_inode* inode, int inodeNum) {
   if(inode->i_block[12] != 0) {
     singIndirPtr = malloc(1024 << super.s_log_block_size);
     pread(imgfd, singIndirPtr, (1024<<super.s_log_block_size), (inode->i_block[12] * (1024<<super.s_log_block_size)));
-    printIndirectBlockReferences(singIndirPtr, inodeNum, 1, 1);
+    printIndirectBlockReferences(singIndirPtr, inodeNum, 1, 1, inode->i_block[12]);
     free(singIndirPtr);
   }
   if(inode-> i_block[13] != 0) {
     doubIndirPtr = malloc(1024 << super.s_log_block_size);
     pread(imgfd, doubIndirPtr, (1024<<super.s_log_block_size), (inode->i_block[13] * (1024<<super.s_log_block_size)));
-    printIndirectBlockReferences(doubIndirPtr, inodeNum, 2, 2);
+    printIndirectBlockReferences(doubIndirPtr, inodeNum, 2, 2, inode->i_block[13]);
     free(doubIndirPtr);
   }
   if(inode-> i_block[14] != 0) {
     tripIndirPtr = malloc(1024 << super.s_log_block_size);
     pread(imgfd, tripIndirPtr, (1024<<super.s_log_block_size), (inode->i_block[14] * (1024<<super.s_log_block_size)));
-    printIndirectBlockReferences(tripIndirPtr, inodeNum, 3, 3);
+    printIndirectBlockReferences(tripIndirPtr, inodeNum, 3, 3, inode->i_block[14]);
     free(tripIndirPtr);
   }
 }
