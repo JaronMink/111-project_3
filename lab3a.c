@@ -251,11 +251,11 @@ void printInodeSummary(struct ext2_inode* inode, int inodeNum){
 	dprintf(1, "%s,%d,%d,%d,%d,%d,\'%s\'\n",
 		"DIRENT",
 		inodeNum,
-		0,
-		0,
-		0,
-		0,
-		"test");
+		j,
+		temp.inode,
+		temp.rec_len,
+		temp.name_len,
+		temp.name);
       }
     }
   }
