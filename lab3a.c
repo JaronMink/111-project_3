@@ -225,15 +225,101 @@ void printIndirectBlockReferences(struct ext2_inode* inode, int inodeNum){
 	if(temp.inode != 0){
 	  dprintf(1, "%s,%d,%d,%d,%d,%d\n",
 		  "INDIRECT",
-		  0,
-		  0,
-		  0,
+		  inodeNum,
+		  1,
+		  12 + i,
 		  inode->i_block[12],
 		  inode->i_block[12] + i + 1);
 	}
       }
     }
   }
+
+  if(inode->i_block[13] > 0){
+    pread(imgfd,
+	  singleIndirect,
+	  1024 << super.s_log_block_size,
+	  inode->i_block[13] * 1024 << super.s_log_block_size);
+
+    int i;
+    for(i = 0; i < (1024 << super.s_log_block_size) / 4; i++){
+      pread(imgfd,
+	    doubleIndirect,
+	    1024 << super.s_log_block_size,
+	    singleIndirect[i] * 1024 << super.s_log_block_size);
+
+      int j;
+      for(j = 0; j < (1024 << super.s_log_block_size) / 4; j++){
+	if(doubleIndirect[j] == 0){
+	  break;
+	}
+
+	int k;
+	for(k = 0; k < 1024 << super.s_log_block_size; k += temp.rec_len){
+	  pread(imgfd,
+		&temp,
+		sizeof(struct ext2_dir_entry),
+		(doubleIndirect[j] * 1024 << super.s_log_block_size) + k);
+
+	  if(temp.inode != 0){
+	    dprintf(1, "%s,%d,%d,%d,%d,%d\n",
+		    "INDIRECT",
+		    inodeNum,
+		    2,
+		    13 + j,
+		    inode->i_block[13],
+		    inode->i_block[13] + j + 1);
+	  }
+	}
+      }
+    }
+  }
+
+  if(inode->i_block[14] > 0){
+    pread(imgfd,
+	  singleIndirect,
+	  1024 << super.s_log_block_size,
+	  inode->i_block[14] * 1024 << super.s_log_block_size);
+
+    int i;
+    for(i = 0; i < (1024 << super.s_log_block_size) / 4; i++){
+      pread(imgfd,
+	    doubleIndirect,
+	    1024 << super.s_log_block_size,
+	    singleIndirect[i] * 1024 << super.s_log_block_size);
+
+      int j;
+      for(j = 0; j < (1024 << super.s_log_block_size) / 4; j++){
+	pread(imgfd,
+	      tripleIndirect,
+	      1024 << super.s_log_block_size,
+	      doubleIndirect[j] * 1024 << super.s_log_block_size);
+
+	int k;
+	for(k = 0; k < (1024 << super.s_log_block_size) / 4; k++){
+	  if(tripleIndirect[k] == 0){
+	    break;
+	  }
+
+	  int l;
+	  for(l = 0; l < 1024 << super.s_log_block_size; l += temp.rec_len){
+	    pread(imgfd,
+		  &temp,
+		  sizeof(struct ext2_dir_entry),
+		  (tripleIndirect[k] * 1024 << super.s_log_block_size) + l);
+
+	    dprintf(1, "%s,%d,%d,%d,%d,%d\n",
+		    "INDIRECT",
+		    inodeNum,
+		    3,
+		    13 + k,
+		    inode->i_block[13],
+		    inode->i_block[13] + k + 1);
+	  }
+	}
+      }
+    }
+  }		  
 }
 
 void printInodeSummary(struct ext2_inode* inode, int inodeNum){
