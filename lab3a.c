@@ -20,7 +20,7 @@ struct ext2_group_desc* groupTable = NULL;
 struct ext2_super_block super;
 
 void errorExitNum(char* msg, int exitCode){
-  fprintf(stderr, "%s\n", msg);
+  dprintf(2, "%s\n", msg);
   exit(exitCode);
 }
 
@@ -198,41 +198,41 @@ void printInodeSummary(struct ext2_inode* inode, int inodeNum){
    * INODE, inodenum, filetype, mode, owner, group,
    * linkcount, last change time, mod time, last access time, size, num of blocks
    ********************************************************************************/
-  printf("%s,%d,%c,%o,%d,%d,%d,%s,%s,%s,%d,%d",
-	 "INODE",
-	 inodeNum,
-	 fileType,
-	 mode,
-	 owner,
-	 group,
-	 linkCount,
-	 lastChangeTime,
-	 lastModTime,
-	 lastAccessTime,
-	 size,
-	 blockNum);
+  dprintf(1, "%s,%d,%c,%o,%d,%d,%d,%s,%s,%s,%d,%d",
+	  "INODE",
+	  inodeNum,
+	  fileType,
+	  mode,
+	  owner,
+	  group,
+	  linkCount,
+	  lastChangeTime,
+	  lastModTime,
+	  lastAccessTime,
+	  size,
+	  blockNum);
 
-  printf(",%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-	 inode->i_block[0],
-	 inode->i_block[1],
-	 inode->i_block[2],
-	 inode->i_block[3],
-	 inode->i_block[4],
-	 inode->i_block[5],
-	 inode->i_block[6],
-	 inode->i_block[7],
-	 inode->i_block[8],
-	 inode->i_block[9],
-	 inode->i_block[10],
-	 inode->i_block[11],
-	 inode->i_block[12],
-	 inode->i_block[13],
-	 inode->i_block[14]); 
+  dprintf(1, ",%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+	  inode->i_block[0],
+	  inode->i_block[1],
+	  inode->i_block[2],
+	  inode->i_block[3],
+	  inode->i_block[4],
+	  inode->i_block[5],
+	  inode->i_block[6],
+	  inode->i_block[7],
+	  inode->i_block[8],
+	  inode->i_block[9],
+	  inode->i_block[10],
+	  inode->i_block[11],
+	  inode->i_block[12],
+	  inode->i_block[13],
+	  inode->i_block[14]); 
 }
 
 void printInodesForGroup(__uint32_t blockNum){
   unsigned int offset = (1024 << super.s_log_block_size) * blockNum;
-  printf("blockNum: %d\n", blockNum);
+  //dprintf(1, "blockNum: %d\n", blockNum);
 
   struct ext2_inode currInode;
   unsigned int      i;
@@ -260,7 +260,7 @@ void printIndirectBlockReferences(){
 
 int main(int argc, char *argv[]){
   if(argc != 2){
-    fprintf(stderr, "Provide image as argument as follows: ./lab3a *.img\n");
+    dprintf(2, "Provide image as argument as follows: ./lab3a *.img\n");
     exit(1);
   }
 
