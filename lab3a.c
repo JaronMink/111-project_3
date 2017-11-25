@@ -229,22 +229,35 @@ void printInodeSummary(struct ext2_inode* inode, int inodeNum){
 	  inode->i_block[13],
 	  inode->i_block[14]);
 
+  struct ext2_dir_entry temp;
+  
   if(fileType == 'd'){
     int i;
     for(i = 0; i < EXT2_NDIR_BLOCKS; i++){
-      if(inode.i_block[i] == 0){
+      if(inode->i_block[i] == 0){
 	break;
       }
 
-      
-    dprintf(1, "%s,%d,%d,%d,%d,%d,\'%s\'\n",
-	    "DIRENT",
-	    0,
-	    0,
-	    0,
-	    0,
-	    0,
-	    "test");
+      int j;
+      for(j = 0; j < 1024 << super.s_log_block_size; j += temp.rec_len){
+	pread(imgfd,
+	      &temp,
+	      sizeof(struct ext2_dir_entry),
+	      (inode->i_block[i] * 1024 << super.s_log_block_size) + j);
+	if(temp.inode == 0){
+	  return;
+	}
+	    
+	dprintf(1, "%s,%d,%d,%d,%d,%d,\'%s\'\n",
+		"DIRENT",
+		inodeNum,
+		0,
+		0,
+		0,
+		0,
+		"test");
+      }
+    }
   }
 }
 
