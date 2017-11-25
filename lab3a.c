@@ -200,6 +200,7 @@ void printDirectoryEntries(struct ext2_inode* inode, int inodeNum){
   }  
 }
 
+
 void printIndirectBlockReferences(struct ext2_inode* inode, int inodeNum){
   struct ext2_dir_entry temp;
 
@@ -321,6 +322,49 @@ void printIndirectBlockReferences(struct ext2_inode* inode, int inodeNum){
     }
   }		  
 }
+
+/*
+JARON
+void printIndirectBlockSummary(int* arr, int inodeNum)
+{
+  if(arr[i] != NULL) {
+    int blockOffset = arr[i]*(1024 << super.s_log_block_size);
+    struct ext2_dir_entry dir;
+    int interBlockOffset;
+    for(interBlockOffset = 0; interBlockOffset < (1024<<super.s_log_block_size); interBlockOffset += dir.rec_len) {
+      pread(imgfd, &dir, sizeof(struct ext2_dir_entry), blockOffset + interBlockOffset);
+      
+      if(dir->inode != NULL) { ///////////////////////////////////////////
+	printf("%s,%d,%d,%d,%d,%d",/////////////////////////
+	       "INDIRECT",//////////////////
+	       inodeNum,
+	       level,
+	       offset,
+	       blockNum,
+	       )
+	  }
+    }   
+  }
+  }*/
+
+/*
+JARON
+void printIndirectBlockReferences(struct ext2_inode* originalInode, int* arr, int inodeNum, int indirectLevel, int currLevel){ 
+  
+  int* indirectBlock = malloc((1024 << super.s_log_block_size));
+  int i;
+  for(i = 0; (i*4 < (1024 <<super.s_log_block_size)); i++) {
+    if(currLevel > 1) //if we are not pointing the data yet, follow the pointer
+      {
+	pread(imgfd, indirectBlock, (1024 << super.s_log_block_size), arr[i]*(1024<<super.s_log_block_Size) );
+	printIndirectBlockReferences(originalInode, indirectBlock[i], int inodeNum, int indirectLevel, int currLevel - 1);
+    }
+    else { //we have the block data, lets report on it
+      printIndirectBlockSummary();
+    }
+  }
+  }*/
+
 
 void printInodeSummary(struct ext2_inode* inode, int inodeNum){
   char fileType ='\0';
