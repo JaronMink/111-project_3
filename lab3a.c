@@ -15,6 +15,9 @@
 
 int                     imgfd      = -1;
 int                     numGroups  = 0;
+int*                    singleIndirect;
+int*                    doubleIndirect;
+int*                    tripleIndirect;
 uint8_t                 eightBitInt;
 struct ext2_group_desc* groupTable = NULL;
 struct ext2_super_block super;
@@ -183,24 +186,54 @@ void printDirectoryEntries(struct ext2_inode* inode, int inodeNum){
 	    &temp,
 	    sizeof(struct ext2_dir_entry),
 	    (inode->i_block[i] * 1024 << super.s_log_block_size) + j);
-      if(temp.inode == 0){
-	return;
+      if(temp.inode != 0){
+	dprintf(1, "%s,%d,%d,%d,%d,%d,\'%s\'\n",
+		"DIRENT",
+		inodeNum,
+		j,
+		temp.inode,
+		temp.rec_len,
+		temp.name_len,
+		temp.name);
       }
-	    
-      dprintf(1, "%s,%d,%d,%d,%d,%d,\'%s\'\n",
-	      "DIRENT",
-	      inodeNum,
-	      j,
-	      temp.inode,
-	      temp.rec_len,
-	      temp.name_len,
-	      temp.name);
     }
   }  
 }
 
 void printIndirectBlockReferences(struct ext2_inode* inode, int inodeNum){
-  
+  struct ext2_dir_entry temp;
+
+  if(inode->i_block[12] > 0){
+    pread(imgfd,
+	  singleIndirect,
+	  1024 << super.s_log_block_size,
+	  inode->i_block[12] * (1024 << super.s_log_block_size));
+
+    int i;
+    for(i = 0; i < (1024 << super.s_log_block_size) / 4; i++){
+      if(singleIndirect[i] == 0){
+	break;
+      }
+
+      int j;
+      for(j = 0; j < 1024 << super.s_log_block_size; j += temp.rec_len){
+	pread(imgfd,
+	      &temp,
+	      sizeof(struct ext2_dir_entry),
+	      (inode->i_block[i] * 1024 << super.s_log_block_size) + j);
+
+	if(temp.inode != 0){
+	  dprintf(1, "%s,%d,%d,%d,%d,%d\n",
+		  "INDIRECT",
+		  0,
+		  0,
+		  0,
+		  inode->i_block[12],
+		  inode->i_block[12] + i + 1);
+	}
+      }
+    }
+  }
 }
 
 void printInodeSummary(struct ext2_inode* inode, int inodeNum){
@@ -298,7 +331,7 @@ void printAllInodeSummaries(){
   }
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]){  
   if(argc != 2){
     dprintf(2, "Provide image as argument as follows: ./lab3a *.img\n");
     exit(1);
@@ -319,10 +352,15 @@ int main(int argc, char *argv[]){
   }
 
   pread(imgfd, &super, sizeof(struct ext2_super_block), EXT2_MIN_BLOCK_SIZE);
+
   if(super.s_magic != EXT2_SUPER_MAGIC){
     errorExitOne("Error, file system is not in EXT2 format");
   }    
 
+  singleIndirect = malloc(1024 << super.s_log_block_size);
+  doubleIndirect = malloc(1024 << super.s_log_block_size);
+  tripleIndirect = malloc(1024 << super.s_log_block_size);
+  
   printSuperblockSummary();
   printAllGroupSummaries();
   printAllFreeBlocks();
