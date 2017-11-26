@@ -1,4 +1,21 @@
-NAME:  Nathan Knight, Jaron Mink
-EMAIL: nathongknight@gmail.com, jaronmink@gmail.com
-ID:    004749179, 904598072
+NAME:  Jaron Mink, Nathan Knight 
+EMAIL: jaronmink@gmail.com, nathongknight@gmail.com
+ID:    904598072, 004749179
 
+Files in tarball: lab3a.c Makefile ext2_fs.h README
+
+      lab3a.c: source code that produces the lab3a executable when compiled.
+      Transverses the EXT2 file system and prints out summaries about
+      various datastructures within the file system. Writes output to stdout.
+      Describes the superblock, groups, free-lists, inodes, indirect blocks,
+      and directories.
+
+      Makefile: a makefile that allows for easy compilation and distribution of
+      the program. By default, compiles program. With the dist option, will
+      produce tarball containing all needed files. clean option will delete
+      all files produced by the makefile
+
+      ext2_fs.h: header file that contains neccessary definitions for various
+      ext2 data structures.
+
+      README: This file. Describes all files included.
