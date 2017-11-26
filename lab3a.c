@@ -75,7 +75,7 @@ void printGroupSummary(struct ext2_group_desc* groupDesc,int groupIndex){
   int inodeBitmapBlock    = groupDesc->bg_inode_bitmap;
   int firstFreeInodeBlock = groupDesc->bg_inode_table;
 
-  dprintf(1, "%s,%xd,%d,%d,%d,%d,%d,%d,%d\n",
+  dprintf(1, "%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
 	 "GROUP",
 	 groupIndex,
 	 totalBlocks,
