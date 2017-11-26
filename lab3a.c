@@ -75,7 +75,7 @@ void printGroupSummary(struct ext2_group_desc* groupDesc,int groupIndex){
   int inodeBitmapBlock    = groupDesc->bg_inode_bitmap;
   int firstFreeInodeBlock = groupDesc->bg_inode_table;
 
-  dprintf(1, "%s,%d,%d,%d,%d,%d,%d,%d,%d\n",
+  dprintf(1, "%s,%xd,%d,%d,%d,%d,%d,%d,%d\n",
 	 "GROUP",
 	 groupIndex,
 	 totalBlocks,
@@ -200,146 +200,23 @@ void printDirectoryEntries(struct ext2_inode* inode, int inodeNum){
   }  
 }
 
-/*
-void printIndirectBlockReferences(struct ext2_inode* inode, int inodeNum){
-  struct ext2_dir_entry temp;
 
-  if(inode->i_block[12] > 0){
-    pread(imgfd,
-	  singleIndirect,
-	  1024 << super.s_log_block_size,
-	  inode->i_block[12] * (1024 << super.s_log_block_size));
-
-    int i;
-    for(i = 0; i < (1024 << super.s_log_block_size) / 4; i++){
-      if(singleIndirect[i] == 0){
-	break;
-      }
-
-      int j;
-      for(j = 0; j < 1024 << super.s_log_block_size; j += temp.rec_len){
-	pread(imgfd,
-	      &temp,
-	      sizeof(struct ext2_dir_entry),
-	      (inode->i_block[i] * 1024 << super.s_log_block_size) + j);
-
-	if(temp.inode != 0){
-	  dprintf(1, "%s,%d,%d,%d,%d,%d\n",
-		  "INDIRECT",
-		  inodeNum,
-		  1,
-		  12 + i,
-		  inode->i_block[12],
-		  inode->i_block[12] + i + 1);
-	}
-      }
-    }
-  }
-
-  if(inode->i_block[13] > 0){
-    pread(imgfd,
-	  singleIndirect,
-	  1024 << super.s_log_block_size,
-	  inode->i_block[13] * 1024 << super.s_log_block_size);
-
-    int i;
-    for(i = 0; i < (1024 << super.s_log_block_size) / 4; i++){
-      pread(imgfd,
-	    doubleIndirect,
-	    1024 << super.s_log_block_size,
-	    singleIndirect[i] * 1024 << super.s_log_block_size);
-
-      int j;
-      for(j = 0; j < (1024 << super.s_log_block_size) / 4; j++){
-	if(doubleIndirect[j] == 0){
-	  break;
-	}
-
-	int k;
-	for(k = 0; k < 1024 << super.s_log_block_size; k += temp.rec_len){
-	  pread(imgfd,
-		&temp,
-		sizeof(struct ext2_dir_entry),
-		(doubleIndirect[j] * 1024 << super.s_log_block_size) + k);
-
-	  if(temp.inode != 0){
-	    dprintf(1, "%s,%d,%d,%d,%d,%d\n",
-		    "INDIRECT",
-		    inodeNum,
-		    2,
-		    13 + j,
-		    inode->i_block[13],
-		    inode->i_block[13] + j + 1);
-	  }
-	}
-      }
-    }
-  }
-
-  if(inode->i_block[14] > 0){
-    pread(imgfd,
-	  singleIndirect,
-	  1024 << super.s_log_block_size,
-	  inode->i_block[14] * 1024 << super.s_log_block_size);
-
-    int i;
-    for(i = 0; i < (1024 << super.s_log_block_size) / 4; i++){
-      pread(imgfd,
-	    doubleIndirect,
-	    1024 << super.s_log_block_size,
-	    singleIndirect[i] * 1024 << super.s_log_block_size);
-
-      int j;
-      for(j = 0; j < (1024 << super.s_log_block_size) / 4; j++){
-	pread(imgfd,
-	      tripleIndirect,
-	      1024 << super.s_log_block_size,
-	      doubleIndirect[j] * 1024 << super.s_log_block_size);
-
-	int k;
-	for(k = 0; k < (1024 << super.s_log_block_size) / 4; k++){
-	  if(tripleIndirect[k] == 0){
-	    break;
-	  }
-
-	  int l;
-	  for(l = 0; l < 1024 << super.s_log_block_size; l += temp.rec_len){
-	    pread(imgfd,
-		  &temp,
-		  sizeof(struct ext2_dir_entry),
-		  (tripleIndirect[k] * 1024 << super.s_log_block_size) + l);
-
-	    dprintf(1, "%s,%d,%d,%d,%d,%d\n",
-		    "INDIRECT",
-		    inodeNum,
-		    3,
-		    13 + k,
-		    inode->i_block[13],
-		    inode->i_block[13] + k + 1);
-	  }
-	}
-      }
-    }
-  }		  
-}
-*/ 
-
-void printIndirectBlock(int blockNum, int inodeNum, int indirectLevel, int indirectBlockNum)
+void printIndirectBlock(int blockNum, int inodeNum, int indirectLevel, int indirectBlockNum, int logicalBlockOffset)
 {
   int blockOffset = blockNum*(1024 << super.s_log_block_size);
   //struct ext2_dir_entry dir;
   uint32_t blockPtr = 0;
   int interBlockOffset;
   for(interBlockOffset = 0; interBlockOffset < (1024<<super.s_log_block_size); interBlockOffset += 4) {
+    //logicalBlockOffset;
     pread(imgfd, &blockPtr, sizeof(uint32_t), blockOffset + interBlockOffset);
 
     if(blockPtr != 0) { 
-    printf("%s,%d,%d,%d,%d,%d\n",/////////////////////////
-	   "INDIRECT",//////////////////
-	   //0,0,0,0,0
+    printf("%s,%d,%d,%d,%d,%d\n",
+	   "INDIRECT",
 	   inodeNum,
 	   indirectLevel,
-	   0,
+	   logicalBlockOffset,
 	   indirectBlockNum,
 	   //offset,
 	   blockPtr
@@ -350,7 +227,7 @@ void printIndirectBlock(int blockNum, int inodeNum, int indirectLevel, int indir
 
 
 //JARON
-void printSingleIndirectBlockSummary(int blockNum, int inodeNum, int indirectLevel, int indirectBlockNum)
+void printSingleIndirectBlockSummary(int blockNum, int inodeNum, int indirectLevel, int indirectBlockNum, int logicalBlockOffset)
 {
   int blockOffset = blockNum*(1024 << super.s_log_block_size);
   struct ext2_dir_entry dir;
@@ -359,13 +236,12 @@ void printSingleIndirectBlockSummary(int blockNum, int inodeNum, int indirectLev
     pread(imgfd, &dir, sizeof(struct ext2_dir_entry), blockOffset + interBlockOffset);
     
     if(dir.inode == 0)
-      break; ///////////////////////////////////////////
-    printf("%s,%d,%d,%d,%d,%d\n",/////////////////////////
-	   "INDIRECT",//////////////////
-	   //0,0,0,0,0
+      break; 
+    printf("%s,%d,%d,%d,%d,%d\n",
+	   "INDIRECT",
 	   inodeNum,
 	   indirectLevel,
-	   0,
+	   logicalBlockOffset,
 	   indirectBlockNum,
 	   blockNum
 	   );
@@ -375,24 +251,32 @@ void printSingleIndirectBlockSummary(int blockNum, int inodeNum, int indirectLev
 
 
 //JARON
-void printIndirectBlockReferences(int* blockPtr, int inodeNum, int indirectLevel, int currLevel, int block){
+void printIndirectBlockReferences(int* blockPtr, int inodeNum, int indirectLevel, int currLevel, int block, int logicalBlockOffset){
 
   int* indirectBlock = malloc((1024 << super.s_log_block_size));
   int i;
-   
+
+  /*
+
+
+  */
+ 
   for(i = 0; (i*sizeof(int *) < (1024u <<super.s_log_block_size)); i++) {
     if(currLevel > 1) //if we are not pointing the data yet, follow the pointer
       {
-	if(blockPtr[i] != 0)
-	  printIndirectBlock(block, inodeNum, currLevel, block);
-	
+	if(blockPtr[i] != 0) {
+	  
+	  printIndirectBlock(block, inodeNum, currLevel, block, logicalBlockOffset);
+	}	
 	pread(imgfd, indirectBlock, (1024 << super.s_log_block_size), blockPtr[i]*(1024<<super.s_log_block_size));
-	printIndirectBlockReferences(indirectBlock, inodeNum, indirectLevel, currLevel - 1, blockPtr[i]);
+	printIndirectBlockReferences(indirectBlock, inodeNum, indirectLevel, currLevel - 1, blockPtr[i], logicalBlockOffset);
       }
      else { //we have a single pointer to the block data, lets report on it
+      
        if(blockPtr[i] != 0)
-	 printSingleIndirectBlockSummary(blockPtr[i], inodeNum, currLevel, block);
-    } 
+	 printSingleIndirectBlockSummary(blockPtr[i], inodeNum, currLevel, block, logicalBlockOffset);
+        logicalBlockOffset += 1; //increase block count
+     } 
   }
 }
 
@@ -401,19 +285,19 @@ void printAllIndirectBlocks(struct ext2_inode* inode, int inodeNum) {
   if(inode->i_block[12] != 0) {
     singIndirPtr = malloc(1024 << super.s_log_block_size);
     pread(imgfd, singIndirPtr, (1024<<super.s_log_block_size), (inode->i_block[12] * (1024<<super.s_log_block_size)));
-    printIndirectBlockReferences(singIndirPtr, inodeNum, 1, 1, inode->i_block[12]);
+    printIndirectBlockReferences(singIndirPtr, inodeNum, 1, 1, inode->i_block[12], (12));
     free(singIndirPtr);
   }
   if(inode-> i_block[13] != 0) {
     doubIndirPtr = malloc(1024 << super.s_log_block_size);
     pread(imgfd, doubIndirPtr, (1024<<super.s_log_block_size), (inode->i_block[13] * (1024<<super.s_log_block_size)));
-    printIndirectBlockReferences(doubIndirPtr, inodeNum, 2, 2, inode->i_block[13]);
+    printIndirectBlockReferences(doubIndirPtr, inodeNum, 2, 2, inode->i_block[13], (12 + 256));
     free(doubIndirPtr);
   }
   if(inode-> i_block[14] != 0) {
     tripIndirPtr = malloc(1024 << super.s_log_block_size);
     pread(imgfd, tripIndirPtr, (1024<<super.s_log_block_size), (inode->i_block[14] * (1024<<super.s_log_block_size)));
-    printIndirectBlockReferences(tripIndirPtr, inodeNum, 3, 3, inode->i_block[14]);
+    printIndirectBlockReferences(tripIndirPtr, inodeNum, 3, 3, inode->i_block[14], (12+256+65536));
     free(tripIndirPtr);
   }
 }
@@ -447,7 +331,7 @@ void printInodeSummary(struct ext2_inode* inode, int inodeNum){
   int   size           = inode->i_size;
   int   blockNum       = inode->i_blocks;
 	
-  /*********************************************************************************
+  /********************************************************************************   *
    * INODE, inodenum, filetype, mode, owner, group,
    * linkcount, last change time, mod time, last access time, size, num of blocks
    ********************************************************************************/
@@ -492,6 +376,7 @@ void printInodeSummary(struct ext2_inode* inode, int inodeNum){
     }
   }
 }
+
 
 void printInodesForGroup(__uint32_t blockNum){
   unsigned int offset = (1024 << super.s_log_block_size) * blockNum;
