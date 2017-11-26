@@ -342,8 +342,7 @@ void printIndirectBlock(int blockNum, int inodeNum, int indirectLevel, int indir
 	   0,
 	   indirectBlockNum,
 	   //offset,
-	   //blockNum
-	   0
+	   blockPtr
 	   );
     }
   }
@@ -366,8 +365,8 @@ void printSingleIndirectBlockSummary(int blockNum, int inodeNum, int indirectLev
 	   //0,0,0,0,0
 	   inodeNum,
 	   indirectLevel,
-	   0,0,
-	   //indirectBlockNum,
+	   0,
+	   indirectBlockNum,
 	   blockNum
 	   );
   }
