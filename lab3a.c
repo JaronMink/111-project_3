@@ -324,10 +324,31 @@ void printIndirectBlockReferences(struct ext2_inode* inode, int inodeNum){
 }
 */ 
 
+void printIndirectBlock(int blockNum, int inodeNum, int indirectLevel)
+{
+  int blockOffset = blockNum*(1024 << super.s_log_block_size);
+  //struct ext2_dir_entry dir;
+  uint32_t blockPtr = NULL;
+  int interBlockOffset;
+  for(interBlockOffset = 0; interBlockOffset < (1024<<super.s_log_block_size); interBlockOffset += 4) {
+    pread(imgfd, &blockPtr, sizeof(int *), blockOffset + interBlockOffset);
+
+    if(blockPtr != NULL) { 
+    printf("%s,%d,%d,%d,%d,%d\n",/////////////////////////
+	   "INDIRECT",//////////////////
+	   0,0,0,0,0
+	   //inodeNum,
+	   //indirectLevel,
+	   //offset,
+	   //blockNum,
+	   );
+    }
+  }
+}
 
 
 //JARON
-void printIndirectBlockSummary(int blockNum, int inodeNum, int indirectLevel)
+void printSingleIndirectBlockSummary(int blockNum, int inodeNum, int indirectLevel)
 {
   int blockOffset = blockNum*(1024 << super.s_log_block_size);
   struct ext2_dir_entry dir;
@@ -335,16 +356,16 @@ void printIndirectBlockSummary(int blockNum, int inodeNum, int indirectLevel)
   for(interBlockOffset = 0; interBlockOffset < (1024<<super.s_log_block_size); interBlockOffset += dir.rec_len) {
     pread(imgfd, &dir, sizeof(struct ext2_dir_entry), blockOffset + interBlockOffset);
     
-    if(dir.inode != 0) { ///////////////////////////////////////////
-      printf("%s,%d,%d,%d,%d,%d\n",/////////////////////////
-	     "INDIRECT",//////////////////
-	     0,0,0,0,0
-	     //inodeNum,
-	     //indirectLevel,
-	     //offset,
-	     //blockNum,
-	     );
-	}
+    if(dir.inode == 0)
+      break; ///////////////////////////////////////////
+    printf("%s,%d,%d,%d,%d,%d\n",/////////////////////////
+	   "INDIRECT",//////////////////
+	   0,0,0,0,0
+	   //inodeNum,
+	   //indirectLevel,
+	   //offset,
+	   //blockNum,
+	   );
   }
 }
 
@@ -353,24 +374,34 @@ void printIndirectBlockSummary(int blockNum, int inodeNum, int indirectLevel)
 //JARON
 void printIndirectBlockReferences(int* blockPtr, int inodeNum, int indirectLevel, int currLevel, int block){
 
-  if(currLevel <= 0)
-    return;
+  //if(currLevel <= 0)
+  //return;
   int* indirectBlock = malloc((1024 << super.s_log_block_size));
   int i;
-  if(block != 0)
-    printIndirectBlockSummary(block, inodeNum, currLevel);
+  //if(block != 0)
+  //printIndirectBlockSummary(block, inodeNum, currLevel);
+  //if(currLevel > 1) {
     
+  // }
+   
   for(i = 0; (i*sizeof(int *) < (1024u <<super.s_log_block_size)); i++) {
-    
-    if(currLevel > 0) //if we are not pointing the data yet, follow the pointer
-      {     
+
+    // if(blockPtr[i] != 0)
+    // printIndirectBlockSummary(blockPtr[i], inodeNum, indirectLevel);
+	
+    if(currLevel > 1) //if we are not pointing the data yet, follow the pointer
+      {
+	//printIndirectBlock(block, inodeNum, indirectLevel);
 	pread(imgfd, indirectBlock, (1024 << super.s_log_block_size), blockPtr[i]*(1024<<super.s_log_block_size));
 	printIndirectBlockReferences(indirectBlock, inodeNum, indirectLevel, currLevel - 1, blockPtr[i]);
+	if(blockPtr[i] != 0)
+	  printIndirectBlock(block, inodeNum, indirectLevel);
+	  //printf("%d: currlevel\n", currLevel);
       }
-    //else { //we have a single pointer to the block data, lets report on it
-    // if(blockPtr[i] != 0)
-    //  printIndirectBlockSummary(blockPtr[i], inodeNum, indirectLevel);
-    //} 
+     else { //we have a single pointer to the block data, lets report on it
+     if(blockPtr[i] != 0)
+     printSingleIndirectBlockSummary(blockPtr[i], inodeNum, indirectLevel);
+    } 
   }
 }
 
