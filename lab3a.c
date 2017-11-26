@@ -331,7 +331,7 @@ void printIndirectBlock(int blockNum, int inodeNum, int indirectLevel, int indir
   uint32_t blockPtr = 0;
   int interBlockOffset;
   for(interBlockOffset = 0; interBlockOffset < (1024<<super.s_log_block_size); interBlockOffset += 4) {
-    pread(imgfd, &blockPtr, sizeof(int *), blockOffset + interBlockOffset);
+    pread(imgfd, &blockPtr, sizeof(uint32_t), blockOffset + interBlockOffset);
 
     if(blockPtr != 0) { 
     printf("%s,%d,%d,%d,%d,%d\n",/////////////////////////
