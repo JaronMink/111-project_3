@@ -28,13 +28,63 @@ def getCSVFile():
 #class Spot:
  #   type = "" #File, Inode, ReservedFile, Free
 
+def blockFromCSVLine(line):
+    global superBlock
+    parseLine = line.split(',')
+    if parseLine[0] == 'SUPERBLOCK':
+        return superBlock
+    elif parseLine[0] == 'GROUP':
+        #first unreserved block is the block of the i-nodes, plus the how many blocks the inodeTable is
+        firstUnreservedBlockInGroup = int(parseLine[8]) + (superBlock.inodeSize*superBlock.totalInodes)/superBlock.blockSize 
+        return Group(int(parseLine[4]), int(parseLine[5]), firstUnreservedBlockInGroup)
+    elif parseLine[0] == 'BFREE' || parseLine[0] == 'INDIRECT' || 
+        return Block(
+    
+class Block:
+    #blockType  #Free, Reserved, Taken
+    #blockNum
+    #blockLevel
+    #offset
+    #inodeNum
+
+    def __init__(self, blockType, blockNum, blockLevel, offset, inodeNum):
+        self.blockType = blockType
+        self.blockNum = blockNums
+        self.blockLevel = blockLevel
+        self.offset = offset
+        self.inodeNum = inodeNum
 
 class Spot(IntEnum):
     FREE = auto()
     RESERVED = auto()
     TAKEN = auto()
-    
 
+    
+class SuperBlock:
+    #totalBlocks
+    #totalInodes
+    #firstNonReservedInode
+    
+    def __init__(self, csv_file): #//totalBlocks, totalInodes, firstNonReservedInode):
+        firstLine = csv_file.readline()
+        parsedLine = firstLine.split(',')
+        self.totalBlocks = int(parsedLine[1])
+        self.totalInodes = int(parsedLine[2])
+        self.blockSize = int(parsedLine[3])
+        self.inodeSize = int(parsedLine[4])
+        self.firstNonReservedInode = int(parsedLine[7])
+
+class Group:
+    def __init__(self, numBlocks, numInodes, firstUnreservedBlock):
+        self.numBlocks = numBlocks
+        self.numInodes = numInodes
+        self.firstUnreservedBlock = firstUnreservedBlock
+
+def addAllBlocks(blocks, csv_file):
+    
+    for line in csv_file:
+        block =  
+        
 #reports if
 #  any block is <0 or > highest block
 #  any block takes a reserved block space
@@ -43,22 +93,16 @@ class Spot(IntEnum):
 #  any block is referenced by multiple files
 def blockConsistencyAudit(csv_file):
     global no_inconsistencies_found
+    global superBlock
 
-    #blocks = [None]*5
-    #blocks[1] = Spot.FREE
-    #blocks[4] = Spot.TAKEN
-
-    '''for block in blocks:
-        if(block == Spot.FREE):
-            print("Free is found")
-        if(block == Spot.TAKEN):
-            print("Taken is found")
-    '''
-    
     #create list stucture for all blocks
     #add reserved list to structure
     #add free lists to structure
-    
+
+    #create list of none for blocks
+    blocks = [None]*superBlock.totalBlocks
+
+    addAllBlocks(blocks, csv_file)
     
     #create structure to store all block info,
     #for line in csv_file:
@@ -83,10 +127,15 @@ def directoryConsistencyAudit(csv_file):
 
 def main():
     global no_inconsistencies_found
+    global superBlock
+    
     no_inconsistencies_found = 0
     #first get open input file    
     csv_file = getCSVFile()
 
+    #totalBlocks, totalInodes, first nonreservedInode
+    superBlock = SuperBlock(csv_file)
+        
     blockConsistencyAudit(csv_file)
             
     csv_file.close()
