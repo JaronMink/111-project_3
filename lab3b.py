@@ -64,7 +64,7 @@ class SuperBlock:
     #totalBlocks
     #totalInodes
     #firstNonReservedInode
-    
+
     def __init__(self, csv_file): #//totalBlocks, totalInodes, firstNonReservedInode):
         firstLine = csv_file.readline()
         parsedLine = firstLine.split(',')
@@ -106,10 +106,16 @@ def addAllBlocks(blocks, csv_file):
                     print('Indirect block added at %d', block.blockNum)
                     blocks[block.blockNum] = blocks[block.blockNum].append(blocks)
             if block.blockType == 'BFREE':
-                print('INDIRECT')
+
             if block.blockType == 'IFREE':
+                print('Ifree')
+
             if block.blockType == 'DIRENT':
+                print('Dirent')
+
             if block.blockType == 'INODE':
+                print('Inode')
+
         
 #reports if
 #  any block is <0 or > highest block
@@ -125,7 +131,7 @@ def blockConsistencyAudit(csv_file):
     #add reserved list to structure
     #add free lists to structure
 
-    #create list of none for blocks
+    #create list of empty lists, one lise for each open block
     blocks = [[] for i in range (superBlock.totalBlocks)]
 
     addAllBlocks(blocks, csv_file)
