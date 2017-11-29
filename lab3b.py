@@ -49,7 +49,7 @@ class Block:
 
     def __init__(self, blockType, blockNum, blockLevel, offset, inodeNum):
         self.blockType = blockType
-        self.blockNum = blockNums
+        self.blockNum = blockNum
         self.blockLevel = blockLevel
         self.offset = offset
         self.inodeNum = inodeNum
@@ -80,26 +80,36 @@ class Group:
         self.numInodes = numInodes
         self.firstUnreservedBlock = firstUnreservedBlock
 
+#returns true if block is valid
+def checkBlockValidity(block, firstUnreservedBlock, lastBlock):
+    if block.blockNum < 0 or block.blockNum > lastBlock:
+        print('error, invalid block')
+        return False
+    if block.blockNum < firstUnreservedBlock :
+        print('Error, reserved block')
+        return False
+    return True
+
 def addAllBlocks(blocks, csv_file):
-    
+    global superBlock
     for line in csv_file:
         block =  blockFromCSVLine(line)
         if block.isclass(SuperBlock):
-            print(x)
-            #continue
+            print('Super')
+            continue
         elif block.isclass(Group): #if group, set reserved blocks in list
             firstUnreservedBlock = block.firstUnreservedBlock
             blocks[:firstUnreservedBlock - 1] = [Spot.RESERVED]*firstUnreservedBlock
         elif block.isclass(Block) == True:
-            print(x)
-            if x:
-            
-            #if block.blockType == 'INDIRECT':
-            
-            #if block.blockType == 'BFREE'
-            #if block.blockType == 'IFREE'
-            #if block.blockType == 'DIRENT'
-            #if block.blockType == 'INODE'
+            if block.blockType == 'INDIRECT':
+                if checkBlockValidity(block, firstUnreservedBlock, superBlock.totalBlocks - 1):
+                    print('Indirect block added at %d', block.blockNum)
+                    blocks[block.blockNum] = blocks[block.blockNum].append(blocks)
+            if block.blockType == 'BFREE':
+                print('INDIRECT')
+            if block.blockType == 'IFREE':
+            if block.blockType == 'DIRENT':
+            if block.blockType == 'INODE':
         
 #reports if
 #  any block is <0 or > highest block
@@ -116,7 +126,7 @@ def blockConsistencyAudit(csv_file):
     #add free lists to structure
 
     #create list of none for blocks
-    blocks = [None]*superBlock.totalBlocks
+    blocks = [[] for i in range (superBlock.totalBlocks)]
 
     addAllBlocks(blocks, csv_file)
     
