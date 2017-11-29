@@ -39,7 +39,7 @@ def blockFromCSVLine(line):
         return Group(int(parseLine[4]), int(parseLine[5]), firstUnreservedBlockInGroup)
     elif parseLine[0] == 'BFREE' || parseLine[0] == 'INDIRECT' || 
         return Block(
-    
+
 class Block:
     #blockType  #Free, Reserved, Taken
     #blockNum
@@ -83,7 +83,23 @@ class Group:
 def addAllBlocks(blocks, csv_file):
     
     for line in csv_file:
-        block =  
+        block =  blockFromCSVLine(line)
+        if block.isclass(SuperBlock):
+            print(x)
+            #continue
+        elif block.isclass(Group): #if group, set reserved blocks in list
+            firstUnreservedBlock = block.firstUnreservedBlock
+            blocks[:firstUnreservedBlock - 1] = [Spot.RESERVED]*firstUnreservedBlock
+        elif block.isclass(Block) == True:
+            print(x)
+            if x:
+            
+            #if block.blockType == 'INDIRECT':
+            
+            #if block.blockType == 'BFREE'
+            #if block.blockType == 'IFREE'
+            #if block.blockType == 'DIRENT'
+            #if block.blockType == 'INODE'
         
 #reports if
 #  any block is <0 or > highest block
