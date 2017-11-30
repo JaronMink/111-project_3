@@ -76,10 +76,10 @@ class Directory:
         self.name = parsedLine[0]
         self.parentInodeNum= int(parsedLine[1])
         self.logicalByteOffset= int(parsedLine[2])
-        self.inodeNum= int(parsedLine[3])
+        self.referencedInodeNum= int(parsedLine[3])
         self.entryLen= int(parsedLine[4])
         self.nameLen= int(parsedLine[5])
-        self.name= parsedLine[6][:-1]
+        self.directoryName= parsedLine[6][:-1]
         #print(self.name, end="")
 
 class Direct:
@@ -249,7 +249,7 @@ def addAllBlocks(blockList):
 
     #for each direct, singly, doubly, and triply indirect block, add
     for inode in inodes:
-        for i in range(0, 12): #may need to include indirect pointers???? see later
+        for i in range(0, 12):
             if int(inode.i_blocks[i]) == 0:
                 continue
             directBlock = Direct('DIRECT', int(inode.i_blocks[i]), inode.inodeNum, 0)
@@ -317,7 +317,7 @@ def blockConsistencyAudit():
     #create list stucture for all blocks
     #add reserved list to structure
     #add free lists to structure
-    #create list of empty lists, one lise for each open block
+    #create list of empty lists, one line for each open block
     blocks = [[] for i in range (superBlock.totalBlocks)]
     addAllBlocks(blocks)
     checkForUnreferenced(blocks)
@@ -349,14 +349,70 @@ def addAllInodes(inodeList):
 def inodeAllocationAudit():
     global exitCode
     global superBlock
-    inodeList = [[] for i in range(superBlock.totalInodes)]
+    global inodeList
+    inodeList= [[] for i in range(superBlock.totalInodes)]
     addAllInodes(inodeList)
     checkForUnallocatedInodes(inodeList)
-    #checkForDuplicated()
 
+def checkDirectoryValidity(directory, lastInode):
+    if(directory.referencedInodeNum < 1 or directory.referencedInodeNum > lastInode):
+        print('DIRECTORY INODE %d NAME %s INVALID INODE %d' % (directory.parentInodeNum, directory.directoryName, directory.referencedInodeNum))
+        return False
+    return True
 
-def directoryConsistencyAudit(csv_file):
+def checkIfReferencedIsAllocated(directory, inodeList):
+    if inodeList[directory.referencedInodeNum - 1] == FREE:
+        print('DIRECTORY INODE %d NAME %s UNALLOCATED INODE %d' % (directory.parentInodeNum, directory.directoryName, directory.referencedInodeNum))
+        return False
+    return True
+
+def checkLinkCounts(inodeReferenceDict):
+    for inode in inodeReferenceDict:
+        if inode.linkCount != inodeReferenceDict[inode]:
+            print('INODE %d HAS %d LINKS BUT LINKCOUNT IS %d' % (inode.inodeNum, inodeReferenceDict[inode], inode.linkCount))
+
+def checkSpecialLinks(directories):
+
+    for directory in directories:
+        if(directory.directoryName == '\'.\''):
+            if(directory.referencedInodeNum != directory.parentInodeNum):
+                print('oops')
+        if(directory.directoryName == '\'..\''):
+            #if (directory.referencedInodeNum != directory.parentInodeNum):
+            print('oops2')
+
+def directoryConsistencyAudit():
     global exitCode
+    global superBlock
+    global groups
+    global inodes
+    global inodeList
+    #add inodes in
+
+    #create a dictionary from inode to times referenced
+    inodeReferenceDict = {}
+    inodeNumToInodeDict = {}
+
+    for inode in inodes:
+        inodeReferenceDict[inode] = 0 #intially all reference counts are 0
+        inodeNumToInodeDict[inode.inodeNum] = inode
+
+    #add one to the reference for each dir pointing to it
+    for dirEntry in directories:
+        if checkDirectoryValidity(dirEntry, superBlock.totalInodes) and checkIfReferencedIsAllocated(dirEntry, inodeList):
+            #inodeReferenceDict[hash(inodeNumToInodeDict[dirEntry.referencedInodeNum])] = inodeReferenceDict[hash(inodeNumToInodeDict[dirEntry.referencedInodeNum])] + 1;
+            inodeReferenceDict[inodeNumToInodeDict[dirEntry.referencedInodeNum]] = inodeReferenceDict[inodeNumToInodeDict[dirEntry.referencedInodeNum]] + 1;
+
+            #print(inodeNumToInodeDict[dirEntry.referencedInodeNum])
+
+    checkLinkCounts(inodeReferenceDict)
+
+    checkSpecialLinks(directories)
+
+    #add direntries in
+        #if valid && not unallocated
+
+    #if linkcount != referenced number report error
 
 
 def main():
@@ -369,6 +425,7 @@ def main():
 
     blockConsistencyAudit()
     inodeAllocationAudit()
+    directoryConsistencyAudit()
 
     csv_file.close()
     exit(exitCode)
