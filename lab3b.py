@@ -83,11 +83,13 @@ class Directory:
         #print(self.name, end="")
 
 class Direct:
-    def __init__(self, blockNum, inodeNum):
-        self.name = 'DIRECT'
-        self.blockNum = blockNum
-        self.inodeNum = inodeNum
-        self.logicalOffset = 0
+    def __init__(self, name, blockNum, inodeNum, logicalOffset):
+        self.name = name
+        self.blockNum = int(blockNum)
+        self.inodeNum = int(inodeNum)
+        self.logicalOffset = int(logicalOffset)
+
+
 
 class Indirect:
     def __init__(self, csv_line):
@@ -180,6 +182,12 @@ def checkBlockValidity(block, lastBlock):
     if block.blockNum < 0 or block.blockNum > lastBlock:
         if(block.name == 'DIRECT'):
             name = 'BLOCK'
+        elif(block.name == 'SINGLE'):
+            name = 'INDIRECT BLOCK'
+        elif (block.name == 'DOUBLE'):
+            name = 'DOUBLE INDIRECT BLOCK'
+        elif (block.name == 'TRIPLE'):
+            name = 'TRIPLE INDIRECT BLOCK'
 
         print('INVALID %s %d IN INODE %d AT OFFSET %d' % (name, block.blockNum, block.inodeNum, block.logicalOffset))
         return False
@@ -219,20 +227,34 @@ def addAllBlocks(blockList):
         if(checkBlockValidity(freeBlock, superBlock.totalBlocks - 1)):
             blockList[freeBlock.blockNum] = [FREE]
 
-    #add indirectBlocks
+    #add indirectBlocks references
     for indirectBlock in indirects:
         if(checkBlockValidity(indirectBlock, superBlock.totalBlocks - 1) and checkIfFreeOrReserved(blockList, indirectBlock)):
             blockList[indirectBlock.blockNum] = blockList[indirectBlock.blockNum].append(indirectBlock)
 
-    #for block in
+    #for each direct, singly, doubly, and triply indirect block, add
     for inode in inodes:
         for i in range(0, 12): #may need to include indirect pointers???? see later
             if int(inode.i_blocks[i]) == 0:
                 continue
-            directBlock = Direct(int(inode.i_blocks[i]), inode.inodeNum)
+            directBlock = Direct('DIRECT', int(inode.i_blocks[i]), inode.inodeNum, 0)
             if(checkBlockValidity(directBlock, superBlock.totalBlocks -1) and checkIfFreeOrReserved(blockList, directBlock)):
                 blockList[directBlock.blockNum] = blockList[directBlock.blockNum].append(directBlock)
-    #add
+        for i in range(12, 15):
+            if int(inode.i_blocks[i]) == 0:
+                continue
+            if i == 12: #single indirect
+                singleIndirectBlock = Direct('SINGLE', int(inode.i_blocks[i]), inode.inodeNum, 12)
+                if (checkBlockValidity(singleIndirectBlock, superBlock.totalBlocks - 1) and checkIfFreeOrReserved(blockList,singleIndirectBlock)):
+                    blockList[singleIndirectBlock.blockNum] = blockList[singleIndirectBlock.blockNum].append(singleIndirectBlock)
+            if i == 13: #doubleindirect
+                singleIndirectBlock = Direct('DOUBLE', int(inode.i_blocks[i]), inode.inodeNum, 268)
+                if (checkBlockValidity(singleIndirectBlock, superBlock.totalBlocks - 1) and checkIfFreeOrReserved(blockList,singleIndirectBlock)):
+                    blockList[singleIndirectBlock.blockNum] = blockList[singleIndirectBlock.blockNum].append(singleIndirectBlock)
+            if i == 14: #triple indirect
+                singleIndirectBlock = Direct('TRIPLE', int(inode.i_blocks[i]), inode.inodeNum, 65804)
+                if (checkBlockValidity(singleIndirectBlock, superBlock.totalBlocks - 1) and checkIfFreeOrReserved(blockList,singleIndirectBlock)):
+                    blockList[singleIndirectBlock.blockNum] = blockList[singleIndirectBlock.blockNum].append(singleIndirectBlock)
 
     #for
 
