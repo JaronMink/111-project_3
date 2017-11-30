@@ -6,7 +6,7 @@ default: lab3b
 lab3b: lab3b.py
 	cp lab3b.py lab3b
 
-dist: lab3a.c README Makefile
+dist: lab3b.py README Makefile
 	tar -czvf lab3b-904598072.tar.gz Makefile lab3b.py  README
 
 clean:

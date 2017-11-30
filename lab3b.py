@@ -120,7 +120,8 @@ RESERVED = 2
 TAKEN = 3
 
 def errorExitNum(msg, num):
-    print(msg)
+    #print(msg, file=sys.stderr)
+    print >> sys.stderr, msg
     exit(num)
 def errorExitOne(msg):
     errorExitNum(msg, 1)
@@ -136,7 +137,13 @@ def getCSVFile():
     if(csv_file_str[-4:] != '.csv'):
         errorExitOne('Error, arguement must be of the format \'*.csv\'')
 
-    return open(csv_file_str, 'r') #open csv file in read only
+    try:
+        csv_file = open(csv_file_str, 'r') #open csv file in read only    
+    #if not csv_file.exists():
+    except IOError:
+        errorExitOne('Error, csv file could not be read!')
+        
+    return csv_file
 
 def addObjectFromCSVLine(line):
     global exitCode
@@ -330,6 +337,7 @@ def checkIfFreeInode(inodeList, inode):
     if inodeList[inode.inodeNum - 1] == FREE:
         print('ALLOCATED INODE %d ON FREELIST' % (inode.inodeNum))
         exitCode = 2
+        inodeList[inode.inodeNum - 1] = inode;
         return False
     else:
         return True
