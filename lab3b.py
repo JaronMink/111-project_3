@@ -26,7 +26,7 @@ class SuperBlock:
         self.inodeSize = int(parsedLine[4])
         self.blocksPerGroup = int(parsedLine[5])
         self.inodesPerGroup = int(parsedLine[6])
-        self.firstNonReservedInode = int(parsedLine[7])
+        self.firstUnreservedInode = int(parsedLine[7])
 class Group:
     def __init__(self, csv_line):
         parsedLine = csv_line.split(',')
@@ -38,7 +38,7 @@ class Group:
         self.numFreeInodes = int(parsedLine[5])
         self.blockBitmap = int(parsedLine[6])
         self.inodeBitmap = int(parsedLine[7])
-        self.firstNonReservedInode = int(parsedLine[8])
+        self.firstUnreservedInode = int(parsedLine[8])
         #self.firstUnreservedBlock = self.firstUnreservedInode
 
 class FreeBlock:
@@ -51,7 +51,7 @@ class FreeInode:
     def __init__(self,csv_line):
         parsedLine = csv_line.split(',')
         self.name = parsedLine[0]
-        self.blockNum= int(parsedLine[1])
+        self.inodeNum= int(parsedLine[1])
 
 class Inode:
     def __init__(self, csv_line):
@@ -234,7 +234,7 @@ def addAllBlocks(blockList):
     global indirects
     #add reserved blocks
     #since only 1 block, we can find all restricted blocks through first group
-    firstUnreservedBlock = groups[0].firstNonReservedInode + (superBlock.inodeSize * superBlock.totalInodes/superBlock.blockSize)
+    firstUnreservedBlock = groups[0].firstUnreservedInode + (superBlock.inodeSize * superBlock.totalInodes/superBlock.blockSize)
     blockList[:firstUnreservedBlock] = firstUnreservedBlock*[RESERVED]
 
     #addFreeBlocks
@@ -278,6 +278,13 @@ def checkForUnreferenced(blocks):
             print('UNREFERENCED BLOCK %d' % blocks.index(block))
             exitCode = 2
 
+def checkForUnreferencedInodes(inodeList):
+    global exitCode
+    for inode in inodeList:
+        if not inode:
+            print('UNREFERENCED BLOCK %d' % (inodeList.index(inode) + 1))
+            exitCode = 2
+
 def printAllDuplicates(blockList):
     for block in blockList:
         if (block.name == 'DIRECT'):
@@ -316,8 +323,36 @@ def blockConsistencyAudit():
     checkForUnreferenced(blocks)
     checkForDuplicated(blocks)
 
-def inodeAllocationAudit(csv_file):
+def checkIfFreeInode(inodeList, inode):
     global exitCode
+    if inodeList[inode.inodeNum - 1] == RESERVED:
+        return False
+    if inodeList[inode.inodeNum - 1] == FREE:
+        print('ALLOCATED INODE %d ON FREELIST' % (inode.inodeNum))
+        exitCode = 2
+        return False
+    else:
+        return True
+
+def addAllInodes(inodeList):
+    global superBlock
+    #add reserved spots
+    firstUnreservedInode = superBlock.firstUnreservedInode
+    inodeList[:firstUnreservedInode-1] = (firstUnreservedInode-1)*[RESERVED]
+    for freeInode in freeInodes:
+        inodeList[freeInode.inodeNum - 1] = FREE
+
+    for inode in inodes:
+        if checkIfFreeInode(inodeList, inode):
+            inodeList[inode.inodeNum - 1].append(inode)
+
+def inodeAllocationAudit():
+    global exitCode
+    global superBlock
+    inodeList = [[] for i in range(superBlock.totalInodes)]
+    addAllInodes(inodeList)
+    checkForUnreferencedInodes(inodeList)
+    #checkForDuplicated()
 
 
 def directoryConsistencyAudit(csv_file):
@@ -332,8 +367,8 @@ def main():
 
     initializeDataFromCSV(csv_file)
 
-    # totalBlocks, totalInodes, first nonreservedInode
     blockConsistencyAudit()
+    inodeAllocationAudit()
 
     csv_file.close()
     exit(exitCode)
