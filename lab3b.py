@@ -197,11 +197,21 @@ def checkBlockValidity(block, lastBlock):
     return True
 
 def checkIfFreeOrReserved(blocks, block):
+    if (block.name == 'DIRECT'):
+        name = 'BLOCK'
+    elif (block.name == 'SINGLE'):
+        name = 'INDIRECT BLOCK'
+    elif (block.name == 'DOUBLE'):
+        name = 'DOUBLE INDIRECT BLOCK'
+    elif (block.name == 'TRIPLE'):
+        name = 'TRIPLE INDIRECT BLOCK'
+
     if blocks[block.blockNum] == FREE:
-        print('Error, allocated Free Block')
-        return True
+        print('ALLOCATED %s %d ON FREELIST' %(name, block.blockNum))
+        return False
     elif blocks[block.blockNum] == RESERVED:
-        print('Error, block is reserved')
+        #print('Error, block is reserved')
+        print('RESERVED %s %d IN INODE %d AT OFFSET %d' % (name, block.blockNum, block.inodeNum, block.logicalOffset))
         return False
     else:
         return True
@@ -225,12 +235,12 @@ def addAllBlocks(blockList):
     #addFreeBlocks
     for freeBlock in freeBlocks:
         if(checkBlockValidity(freeBlock, superBlock.totalBlocks - 1)):
-            blockList[freeBlock.blockNum] = [FREE]
+            blockList[freeBlock.blockNum] = FREE
 
     #add indirectBlocks references
     for indirectBlock in indirects:
         if(checkBlockValidity(indirectBlock, superBlock.totalBlocks - 1) and checkIfFreeOrReserved(blockList, indirectBlock)):
-            blockList[indirectBlock.blockNum] = blockList[indirectBlock.blockNum].append(indirectBlock)
+            blockList[indirectBlock.blockNum].append(indirectBlock)
 
     #for each direct, singly, doubly, and triply indirect block, add
     for inode in inodes:
@@ -239,24 +249,44 @@ def addAllBlocks(blockList):
                 continue
             directBlock = Direct('DIRECT', int(inode.i_blocks[i]), inode.inodeNum, 0)
             if(checkBlockValidity(directBlock, superBlock.totalBlocks -1) and checkIfFreeOrReserved(blockList, directBlock)):
-                blockList[directBlock.blockNum] = blockList[directBlock.blockNum].append(directBlock)
+                blockList[directBlock.blockNum].append(directBlock)
         for i in range(12, 15):
             if int(inode.i_blocks[i]) == 0:
                 continue
             if i == 12: #single indirect
                 singleIndirectBlock = Direct('SINGLE', int(inode.i_blocks[i]), inode.inodeNum, 12)
                 if (checkBlockValidity(singleIndirectBlock, superBlock.totalBlocks - 1) and checkIfFreeOrReserved(blockList,singleIndirectBlock)):
-                    blockList[singleIndirectBlock.blockNum] = blockList[singleIndirectBlock.blockNum].append(singleIndirectBlock)
+                    blockList[singleIndirectBlock.blockNum].append(singleIndirectBlock)
             if i == 13: #doubleindirect
                 singleIndirectBlock = Direct('DOUBLE', int(inode.i_blocks[i]), inode.inodeNum, 268)
                 if (checkBlockValidity(singleIndirectBlock, superBlock.totalBlocks - 1) and checkIfFreeOrReserved(blockList,singleIndirectBlock)):
-                    blockList[singleIndirectBlock.blockNum] = blockList[singleIndirectBlock.blockNum].append(singleIndirectBlock)
+                    blockList[singleIndirectBlock.blockNum].append(singleIndirectBlock)
             if i == 14: #triple indirect
                 singleIndirectBlock = Direct('TRIPLE', int(inode.i_blocks[i]), inode.inodeNum, 65804)
                 if (checkBlockValidity(singleIndirectBlock, superBlock.totalBlocks - 1) and checkIfFreeOrReserved(blockList,singleIndirectBlock)):
-                    blockList[singleIndirectBlock.blockNum] = blockList[singleIndirectBlock.blockNum].append(singleIndirectBlock)
+                    blockList[singleIndirectBlock.blockNum].append(singleIndirectBlock)
 
-    #for
+def checkForUnreferenced(blocks):
+    for block in blocks:
+        if not block:
+            print('UNREFERENCED BLOCK %d' % blocks.index(block))
+
+def printAllDuplicates(blockList):
+    for block in blockList:
+        if (block.name == 'DIRECT'):
+            name = 'BLOCK'
+        elif (block.name == 'SINGLE'):
+            name = 'INDIRECT BLOCK'
+        elif (block.name == 'DOUBLE'):
+            name = 'DOUBLE INDIRECT BLOCK'
+        elif (block.name == 'TRIPLE'):
+            name = 'TRIPLE INDIRECT BLOCK'
+        print('DUPLICATE %s %d IN INODE %d AT OFFSET %d' %(name, block.blockNum, block.inodeNum, block.logicalOffset))
+
+def checkForDuplicated(blocks):
+    for block in blocks:
+        if block != FREE and block != RESERVED and len(block) > 1:
+            printAllDuplicates(block)
 
 #reports if
 #  any block is <0 or > highest block
@@ -274,7 +304,8 @@ def blockConsistencyAudit():
     #create list of empty lists, one lise for each open block
     blocks = [[] for i in range (superBlock.totalBlocks)]
     addAllBlocks(blocks)
-
+    checkForUnreferenced(blocks)
+    checkForDuplicated(blocks)
 
 def inodeAllocationAudit(csv_file):
     global no_inconsistencies_found
