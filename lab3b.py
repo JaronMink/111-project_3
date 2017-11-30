@@ -278,11 +278,11 @@ def checkForUnreferenced(blocks):
             print('UNREFERENCED BLOCK %d' % blocks.index(block))
             exitCode = 2
 
-def checkForUnreferencedInodes(inodeList):
+def checkForUnallocatedInodes(inodeList):
     global exitCode
     for inode in inodeList:
         if not inode:
-            print('UNREFERENCED BLOCK %d' % (inodeList.index(inode) + 1))
+            print('UNALLOCATED INODE %d ON FREELIST' % (inodeList.index(inode) + 1))
             exitCode = 2
 
 def printAllDuplicates(blockList):
@@ -351,7 +351,7 @@ def inodeAllocationAudit():
     global superBlock
     inodeList = [[] for i in range(superBlock.totalInodes)]
     addAllInodes(inodeList)
-    checkForUnreferencedInodes(inodeList)
+    checkForUnallocatedInodes(inodeList)
     #checkForDuplicated()
 
 
