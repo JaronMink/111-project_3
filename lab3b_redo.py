@@ -38,7 +38,8 @@ class Group:
         self.numFreeInodes = int(parsedLine[5])
         self.blockBitmap = int(parsedLine[6])
         self.inodeBitmap = int(parsedLine[7])
-        self.firstUnreservedBlock = int(parsedLine[8])
+        self.firstNonReservedInode = int(parsedLine[8])
+        #self.firstUnreservedBlock = self.firstUnreservedInode
 
 class FreeBlock:
     def __init__(self,csv_line):
@@ -98,12 +99,15 @@ class Block:
         self.offset = offset
         self.inodeNum = inodeNum
         '''
-
 '''class Spot(IntEnum):
     FREE = auto()
     RESERVED = auto()
     TAKEN = auto()
 '''
+#define numeric constants to use, values do not matter
+FREE = 1
+RESERVED = 2
+TAKEN = 3
 
 def errorExitNum(msg, num):
     print(msg)
@@ -125,6 +129,15 @@ def getCSVFile():
     return open(csv_file_str, 'r') #open csv file in read only
 
 def addObjectFromCSVLine(line):
+    global no_inconsistencies_found
+    global superBlock
+    global groups
+    global inodes
+    global freeBlocks
+    global freeInodes
+    global directories
+    global indirects
+
     parseLine = line.split(',')
     if parseLine[0] == 'SUPERBLOCK':
         object = SuperBlock(line)
@@ -150,28 +163,62 @@ def addObjectFromCSVLine(line):
     else:
         errorExitOne("Error, csv file not formatted properly")
 
-'''
-    elif parseLine[0] == 'GROUP':
-        #first unreserved block is the block of the i-nodes, plus the how many blocks the inodeTable is
-        firstUnreservedBlockInGroup = int(parseLine[8]) + (superBlock.inodeSize*superBlock.totalInodes)/superBlock.blockSize
-        return Group(int(parseLine[4]), int(parseLine[5]), firstUnreservedBlockInGroup)
-    elif parseLine[0] == 'BFREE' || parseLine[0] == 'INDIRECT' ||
-        return Block(
-        '''
-
 def initializeDataFromCSV(csv_file):
     for line in csv_file:
         addObjectFromCSVLine(line)
 
 #returns true if block is valid
-def checkBlockValidity(block, firstUnreservedBlock, lastBlock):
+def checkBlockValidity(block, lastBlock):
     if block.blockNum < 0 or block.blockNum > lastBlock:
         print('error, invalid block')
         return False
-    if block.blockNum < firstUnreservedBlock :
-        print('Error, reserved block')
-        return False
+    #if block.blockNum < firstUnreservedBlock :
+     #   print('Error, reserved block')
+      #  return False
     return True
+
+def checkIfFreeOrReserved(blocks, block):
+    if blocks[block.blockNum] == FREE:
+        print('Error, allocated Free Block')
+        return True
+    elif blocks[block.blockNum] == RESERVED:
+        print('Error, block is reserved')
+        return False
+    else:
+        return True
+
+def addAllBlocks(blockList):
+    global FREE
+    global RESERVED
+    global no_inconsistencies_found
+    global superBlock
+    global groups
+    global inodes
+    global freeBlocks
+    global freeInodes
+    global directories
+    global indirects
+    #add reserved blocks
+    #since only 1 block, we can find all restricted blocks through first group
+    firstUnreservedBlock = groups[0].firstNonReservedInode + (superBlock.inodeSize * superBlock.totalInodes/superBlock.blockSize)
+    blockList[:firstUnreservedBlock] = firstUnreservedBlock*[RESERVED]
+
+    #addFreeBlocks
+    for block in freeBlocks:
+        if(checkBlockValidity(block, superBlock.totalBlocks - 1)):
+            blockList[block.blockNum] = [FREE]
+    
+    #add indirectBlocks
+    for block in indirects:
+        if(checkBlockValidity(block, superBlock.totalBlocks - 1) and checkIfFreeOrReserved(blockList, block)):
+            blockList[block.blockNum] = blockList[block.blockNum].append(block)
+
+    for block in
+
+
+    #add
+
+    #for
 
 #reports if
 #  any block is <0 or > highest block
@@ -179,16 +226,17 @@ def checkBlockValidity(block, firstUnreservedBlock, lastBlock):
 #  any block is not referenced by a freelist and not referenced by a file
 #  any block is refereneced by a freelist and a file
 #  any block is referenced by multiple files
-def blockConsistencyAudit(csv_file):
+def blockConsistencyAudit():
     global no_inconsistencies_found
     global superBlock
 
     #create list stucture for all blocks
     #add reserved list to structure
     #add free lists to structure
-
     #create list of empty lists, one lise for each open block
     blocks = [[] for i in range (superBlock.totalBlocks)]
+    addAllBlocks(blocks)
+
 
 def inodeAllocationAudit(csv_file):
     global no_inconsistencies_found
@@ -208,9 +256,7 @@ def main():
     initializeDataFromCSV(csv_file)
 
     # totalBlocks, totalInodes, first nonreservedInode
-
-
-    #blockConsistencyAudit(csv_file)
+    blockConsistencyAudit()
 
     csv_file.close()
     exit(no_inconsistencies_found)
