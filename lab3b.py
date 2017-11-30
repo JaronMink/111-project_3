@@ -282,7 +282,7 @@ def checkForUnallocatedInodes(inodeList):
     global exitCode
     for inode in inodeList:
         if not inode:
-            print('UNALLOCATED INODE %d ON FREELIST' % (inodeList.index(inode) + 1))
+            print('UNALLOCATED INODE %d NOT ON FREELIST' % (inodeList.index(inode) + 1))
             exitCode = 2
 
 def printAllDuplicates(blockList):
