@@ -1,14 +1,14 @@
 #!/usr/local/cs//bin/python3
 
 import sys #to get arguements
-from enum import IntEnum, auto
-no_inconsistencies_found
+#from enum import IntEnum, auto
+no_inconsistencies_found = 0
 superBlock = None
 groups = []
 inodes = []
 freeBlocks = []
 freeInodes = []
-dirent = []
+directories = []
 indirects = []
 
 class SuperBlock:
@@ -62,9 +62,34 @@ class Inode:
         self.owner = parsedLine[4]
         self.group = parsedLine[5]
         self.linkCount = int(parsedLine[6])
-        self. = int(parsedLine[7])
-        self.firstUnreservedBlock = int(parsedLine[8])
+        self.lastInodeChange = parsedLine[7]
+        self.timeOfLastModification = parsedLine[8]
+        self.timeOfLastAccess = parsedLine[9]
+        self.fileSize = int(parsedLine[6])
+        self.numBlocks = int(parsedLine[6])
 
+class Directory:
+    def __init__(self,csv_line):
+        parsedLine = csv_line.split(',')
+        self.name = parsedLine[0]
+        self.parentInodeNum= int(parsedLine[1])
+        self.logicalByteOffset= int(parsedLine[2])
+        self.inodeNum= int(parsedLine[3])
+        self.entryLen= int(parsedLine[4])
+        self.nameLen= int(parsedLine[5])
+        self.name= parsedLine[6][:-1]
+        #print(self.name, end="")
+
+class Indirect:
+    def __init__(self, csv_line):
+        parsedLine = csv_line.split(',')
+        self.name = parsedLine[0]
+        self.owningInodeNum = int(parsedLine[1])
+        self.indirectionLevel = int(parsedLine[2])
+        self.logicalOffset = int(parsedLine[3])
+        self.indirectBlockNum = int(parsedLine[4])
+        self.referencedBlockNum = int(parsedLine[5])
+'''
 class Block:
     def __init__(self, blockType, blockNum, blockLevel, offset, inodeNum):
         self.blockType = blockType
@@ -72,12 +97,13 @@ class Block:
         self.blockLevel = blockLevel
         self.offset = offset
         self.inodeNum = inodeNum
+        '''
 
-
-class Spot(IntEnum):
+'''class Spot(IntEnum):
     FREE = auto()
     RESERVED = auto()
     TAKEN = auto()
+'''
 
 def errorExitNum(msg, num):
     print(msg)
@@ -98,21 +124,44 @@ def getCSVFile():
 
     return open(csv_file_str, 'r') #open csv file in read only
 
-def objectFromCSVLine(line):
-    global superBlock
+def addObjectFromCSVLine(line):
     parseLine = line.split(',')
     if parseLine[0] == 'SUPERBLOCK':
-        return superBlock
+        object = SuperBlock(line)
+        superBlock = object
+    elif parseLine[0] == 'GROUP':
+        object = Group(line)
+        groups.append(object)
+    elif parseLine[0] == 'BFREE':
+        object = FreeBlock(line)
+        freeBlocks.append(object)
+    elif parseLine[0] == 'IFREE':
+        object = FreeInode(line)
+        freeInodes.append(object)
+    elif parseLine[0] == 'INODE':
+        object = Inode(line)
+        inodes.append(object)
+    elif parseLine[0] == 'DIRENT':
+        object = Directory(line)
+        directories.append(object)
+    elif parseLine[0] == 'INDIRECT':
+        object = Indirect(line)
+        indirects.append(object)
+    else:
+        errorExitOne("Error, csv file not formatted properly")
+
+'''
     elif parseLine[0] == 'GROUP':
         #first unreserved block is the block of the i-nodes, plus the how many blocks the inodeTable is
         firstUnreservedBlockInGroup = int(parseLine[8]) + (superBlock.inodeSize*superBlock.totalInodes)/superBlock.blockSize
         return Group(int(parseLine[4]), int(parseLine[5]), firstUnreservedBlockInGroup)
     elif parseLine[0] == 'BFREE' || parseLine[0] == 'INDIRECT' ||
         return Block(
+        '''
 
-def intializeDataFromCSV(csv_file):
+def initializeDataFromCSV(csv_file):
     for line in csv_file:
-        object = objectFromCSVLine(line)
+        addObjectFromCSVLine(line)
 
 #returns true if block is valid
 def checkBlockValidity(block, firstUnreservedBlock, lastBlock):
@@ -159,9 +208,9 @@ def main():
     initializeDataFromCSV(csv_file)
 
     # totalBlocks, totalInodes, first nonreservedInode
-    superBlock = SuperBlock(csv_file)
 
-    blockConsistencyAudit(csv_file)
+
+    #blockConsistencyAudit(csv_file)
 
     csv_file.close()
     exit(no_inconsistencies_found)
