@@ -1,4 +1,4 @@
-#!/usr/local/cs//bin/python3
+#!/usr/bin/python2.7
 
 import sys #to get arguements
 #from enum import IntEnum, auto
