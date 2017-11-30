@@ -355,34 +355,43 @@ def inodeAllocationAudit():
     checkForUnallocatedInodes(inodeList)
 
 def checkDirectoryValidity(directory, lastInode):
+    global exitCode
     if(directory.referencedInodeNum < 1 or directory.referencedInodeNum > lastInode):
         print('DIRECTORY INODE %d NAME %s INVALID INODE %d' % (directory.parentInodeNum, directory.directoryName, directory.referencedInodeNum))
+        exitCode = 2
         return False
     return True
 
 def checkIfReferencedIsAllocated(directory, inodeList):
+    global exitCode
     if inodeList[directory.referencedInodeNum - 1] == FREE:
         print('DIRECTORY INODE %d NAME %s UNALLOCATED INODE %d' % (directory.parentInodeNum, directory.directoryName, directory.referencedInodeNum))
+        exitCode = 2
         return False
     return True
 
 def checkLinkCounts(inodeReferenceDict):
+    global exitCode
+
     for inode in inodeReferenceDict:
         if inode.linkCount != inodeReferenceDict[inode]:
             print('INODE %d HAS %d LINKS BUT LINKCOUNT IS %d' % (inode.inodeNum, inodeReferenceDict[inode], inode.linkCount))
+            exitCode = 2
 
 def checkSpecialLinks(directories, childToParentDict):
+    global exitCode
 
     for directory in directories:
         #if . doesn't point to itself, error
         if(directory.directoryName == '\'.\''):
             if(directory.referencedInodeNum != directory.parentInodeNum):
                 print('DIRECTORY INODE %d NAME %s LINK TO INODE %d SHOULD BE %d' % (directory.parentInodeNum, directory.directoryName, directory.referencedInodeNum, directory.parentInodeNum))
-
+                exitCode = 2
         #if .. doesn't point to the parent above it, error as well
         if(directory.directoryName == '\'..\''):
             if (childToParentDict[directory.parentInodeNum] != directory.referencedInodeNum):
                 print('DIRECTORY INODE %d NAME %s LINK TO INODE %d SHOULD BE %d' % (directory.parentInodeNum, directory.directoryName, directory.referencedInodeNum, childToParentDict[directory.parentInodeNum]))
+                exitCode = 2
 
 def directoryConsistencyAudit():
     global exitCode
@@ -407,7 +416,6 @@ def directoryConsistencyAudit():
     #add one to the reference for each dir pointing to it
     for dirEntry in directories:
         if checkDirectoryValidity(dirEntry, superBlock.totalInodes) and checkIfReferencedIsAllocated(dirEntry, inodeList):
-            #inodeReferenceDict[hash(inodeNumToInodeDict[dirEntry.referencedInodeNum])] = inodeReferenceDict[hash(inodeNumToInodeDict[dirEntry.referencedInodeNum])] + 1;
             inodeReferenceDict[inodeNumToInodeDict[dirEntry.referencedInodeNum]] = inodeReferenceDict[inodeNumToInodeDict[dirEntry.referencedInodeNum]] + 1;
             #if directory is not . or .., add it to to make a map of inodes and their parents
             if dirEntry.directoryName != '\'.\'' and dirEntry.directoryName != '\'..\'':
