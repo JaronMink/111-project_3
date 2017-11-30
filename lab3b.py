@@ -371,15 +371,18 @@ def checkLinkCounts(inodeReferenceDict):
         if inode.linkCount != inodeReferenceDict[inode]:
             print('INODE %d HAS %d LINKS BUT LINKCOUNT IS %d' % (inode.inodeNum, inodeReferenceDict[inode], inode.linkCount))
 
-def checkSpecialLinks(directories):
+def checkSpecialLinks(directories, childToParentDict):
 
     for directory in directories:
+        #if . doesn't point to itself, error
         if(directory.directoryName == '\'.\''):
             if(directory.referencedInodeNum != directory.parentInodeNum):
-                print('oops')
+                print('DIRECTORY INODE %d NAME %s LINK TO INODE %d SHOULD BE %d' % (directory.parentInodeNum, directory.directoryName, directory.referencedInodeNum, directory.parentInodeNum))
+
+        #if .. doesn't point to the parent above it, error as well
         if(directory.directoryName == '\'..\''):
-            #if (directory.referencedInodeNum != directory.parentInodeNum):
-            print('oops2')
+            if (childToParentDict[directory.parentInodeNum] != directory.referencedInodeNum):
+                print('DIRECTORY INODE %d NAME %s LINK TO INODE %d SHOULD BE %d' % (directory.parentInodeNum, directory.directoryName, directory.referencedInodeNum, childToParentDict[directory.parentInodeNum]))
 
 def directoryConsistencyAudit():
     global exitCode
@@ -392,6 +395,10 @@ def directoryConsistencyAudit():
     #create a dictionary from inode to times referenced
     inodeReferenceDict = {}
     inodeNumToInodeDict = {}
+    childToParentInodeDict = {}
+
+    # add root directory where /../ is still /
+    childToParentInodeDict[2] = 2
 
     for inode in inodes:
         inodeReferenceDict[inode] = 0 #intially all reference counts are 0
@@ -402,12 +409,13 @@ def directoryConsistencyAudit():
         if checkDirectoryValidity(dirEntry, superBlock.totalInodes) and checkIfReferencedIsAllocated(dirEntry, inodeList):
             #inodeReferenceDict[hash(inodeNumToInodeDict[dirEntry.referencedInodeNum])] = inodeReferenceDict[hash(inodeNumToInodeDict[dirEntry.referencedInodeNum])] + 1;
             inodeReferenceDict[inodeNumToInodeDict[dirEntry.referencedInodeNum]] = inodeReferenceDict[inodeNumToInodeDict[dirEntry.referencedInodeNum]] + 1;
-
-            #print(inodeNumToInodeDict[dirEntry.referencedInodeNum])
+            #if directory is not . or .., add it to to make a map of inodes and their parents
+            if dirEntry.directoryName != '\'.\'' and dirEntry.directoryName != '\'..\'':
+                childToParentInodeDict[dirEntry.referencedInodeNum] = dirEntry.parentInodeNum
 
     checkLinkCounts(inodeReferenceDict)
 
-    checkSpecialLinks(directories)
+    checkSpecialLinks(directories, childToParentInodeDict)
 
     #add direntries in
         #if valid && not unallocated
