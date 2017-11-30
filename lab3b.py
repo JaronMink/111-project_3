@@ -2,7 +2,7 @@
 
 import sys #to get arguements
 #from enum import IntEnum, auto
-no_inconsistencies_found = 0
+exitCode = 0
 superBlock = None
 groups = []
 inodes = []
@@ -139,7 +139,7 @@ def getCSVFile():
     return open(csv_file_str, 'r') #open csv file in read only
 
 def addObjectFromCSVLine(line):
-    global no_inconsistencies_found
+    global exitCode
     global superBlock
     global groups
     global inodes
@@ -179,6 +179,7 @@ def initializeDataFromCSV(csv_file):
 
 #returns true if block is valid
 def checkBlockValidity(block, lastBlock):
+    global exitCode
     if block.blockNum < 0 or block.blockNum > lastBlock:
         if(block.name == 'DIRECT'):
             name = 'BLOCK'
@@ -190,6 +191,7 @@ def checkBlockValidity(block, lastBlock):
             name = 'TRIPLE INDIRECT BLOCK'
 
         print('INVALID %s %d IN INODE %d AT OFFSET %d' % (name, block.blockNum, block.inodeNum, block.logicalOffset))
+        exitCode = 2
         return False
     #if block.blockNum < firstUnreservedBlock :
      #   print('Error, reserved block')
@@ -197,6 +199,7 @@ def checkBlockValidity(block, lastBlock):
     return True
 
 def checkIfFreeOrReserved(blocks, block):
+    global exitCode
     if (block.name == 'DIRECT'):
         name = 'BLOCK'
     elif (block.name == 'SINGLE'):
@@ -208,10 +211,12 @@ def checkIfFreeOrReserved(blocks, block):
 
     if blocks[block.blockNum] == FREE:
         print('ALLOCATED %s %d ON FREELIST' %(name, block.blockNum))
+        exitCode = 2
         return False
     elif blocks[block.blockNum] == RESERVED:
         #print('Error, block is reserved')
         print('RESERVED %s %d IN INODE %d AT OFFSET %d' % (name, block.blockNum, block.inodeNum, block.logicalOffset))
+        exitCode = 2
         return False
     else:
         return True
@@ -219,7 +224,7 @@ def checkIfFreeOrReserved(blocks, block):
 def addAllBlocks(blockList):
     global FREE
     global RESERVED
-    global no_inconsistencies_found
+    global exitCode
     global superBlock
     global groups
     global inodes
@@ -267,9 +272,11 @@ def addAllBlocks(blockList):
                     blockList[singleIndirectBlock.blockNum].append(singleIndirectBlock)
 
 def checkForUnreferenced(blocks):
+    global exitCode
     for block in blocks:
         if not block:
             print('UNREFERENCED BLOCK %d' % blocks.index(block))
+            exitCode = 2
 
 def printAllDuplicates(blockList):
     for block in blockList:
@@ -284,9 +291,11 @@ def printAllDuplicates(blockList):
         print('DUPLICATE %s %d IN INODE %d AT OFFSET %d' %(name, block.blockNum, block.inodeNum, block.logicalOffset))
 
 def checkForDuplicated(blocks):
+    global exitCode
     for block in blocks:
         if block != FREE and block != RESERVED and len(block) > 1:
             printAllDuplicates(block)
+            exitCode = 2
 
 #reports if
 #  any block is <0 or > highest block
@@ -295,7 +304,7 @@ def checkForDuplicated(blocks):
 #  any block is refereneced by a freelist and a file
 #  any block is referenced by multiple files
 def blockConsistencyAudit():
-    global no_inconsistencies_found
+    global exitCode
     global superBlock
 
     #create list stucture for all blocks
@@ -308,17 +317,16 @@ def blockConsistencyAudit():
     checkForDuplicated(blocks)
 
 def inodeAllocationAudit(csv_file):
-    global no_inconsistencies_found
+    global exitCode
 
 
 def directoryConsistencyAudit(csv_file):
-    global no_inconsistencies_found
+    global exitCode
 
 
 def main():
-
-
-    no_inconsistencies_found = 0
+    global exitCode
+    exitCode = 0
     # first get open input file
     csv_file = getCSVFile()
 
@@ -328,7 +336,7 @@ def main():
     blockConsistencyAudit()
 
     csv_file.close()
-    exit(no_inconsistencies_found)
+    exit(exitCode)
 
 
 if __name__ == '__main__':  # run main function
